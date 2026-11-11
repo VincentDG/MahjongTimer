@@ -1,0 +1,46 @@
+@using MahjongTimer.Game
+
+<button class="seat @Position @StateClass" @onpointerdown="() => OnTap.InvokeAsync(SeatIndex)"
+        aria-label="@($"{Position} seat")">
+    <span class="face">
+        <span class="label">@Label</span>
+        <span class="big">@Seconds(BigValue)</span>
+        <span class="bankline">@Detail</span>
+        <span class="bar"><i style="width:@(BarPercent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></i></span>
+    </span>
+</button>
+
+@code {
+    [Parameter, EditorRequired] public TableClock Clock { get; set; } = default!;
+    [Parameter, EditorRequired] public int SeatIndex { get; set; }
+    [Parameter, EditorRequired] public string Position { get; set; } = "";
+    [Parameter] public EventCallback<int> OnTap { get; set; }
+
+    private bool IsActive => Clock.ActiveSeat == SeatIndex;
+    private double Bank => Clock.BankLeft(SeatIndex);
+
+    private string StateClass => !IsActive ? ""
+        : Clock.IsExpired ? "active expired"
+        : Clock.IsInBank ? "active in-bank"
+        : "active";
+
+    private string Label => !IsActive ? "bank"
+        : Clock.IsExpired ? "time"
+        : Clock.IsInBank ? "bank"
+        : "your turn";
+
+    private double BigValue => IsActive && !Clock.IsInBank ? Clock.BaseLeft : Bank;
+
+    private string Detail => !IsActive ? ""
+        : Clock.IsExpired ? "tap when done"
+        : Clock.IsInBank ? "base used"
+        : $"bank {Seconds(Bank)}";
+
+    private double BarPercent => IsActive && !Clock.IsInBank
+        ? Percent(Clock.BaseLeft, Clock.Setting.BaseSeconds)
+        : Percent(Bank, Clock.Setting.BankSeconds);
+
+    private static double Percent(double value, int total) => total <= 0 ? 0 : value / total * 100;
+
+    private static string Seconds(double value) => Math.Max(0, Math.Ceiling(value - 1e-9)).ToString("0");
+}

@@ -1,0 +1,281 @@
+@font-face {
+    font-family: "Azeret Mono";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("../fonts/azeret-mono-700.woff2") format("woff2");
+}
+
+/* A felt table at night: one deliberate dark look, readable under any room light. */
+:root {
+    color-scheme: dark;
+    --ground: #050C0A;
+    --felt: #10392F;
+    --felt-raised: #164638;
+    --felt-line: #24594A;
+    --ivory: #F2EBD9;
+    --ivory-dim: #CFC7B2;
+    --ink: #1C1B16;
+    --ink-muted: #6B6550;
+    --muted: #93AFA5;
+    --text: #DCE7E2;
+    --amber: #E3A43A;
+    --amber-ink: #A86A06;
+    --red: #D4472F;
+    --red-deep: #7E1E10;
+    --display: "Azeret Mono", ui-monospace, "Roboto Mono", monospace;
+    --body: system-ui, -apple-system, "Roboto", "Segoe UI", sans-serif;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+body {
+    background: var(--ground);
+    color: var(--text);
+    font-family: var(--body);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#app { height: 100%; }
+
+button { font: inherit; color: inherit; }
+
+/* ---------- the table ---------- */
+
+.screen {
+    height: 100dvh;
+    box-sizing: border-box;
+    padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right))
+             max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+    background: var(--felt);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-areas:
+        "top top top"
+        "left mid right"
+        "bottom bottom bottom";
+    gap: 4px;
+}
+
+.seat {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+    min-height: 0;
+    border-radius: 16px;
+    background: var(--felt-raised);
+    color: var(--text);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    transition: background-color .2s, color .2s;
+}
+
+.seat:focus-visible { outline: 3px solid var(--amber); outline-offset: -3px; }
+
+.seat.top    { grid-area: top; }
+.seat.bottom { grid-area: bottom; }
+.seat.left   { grid-area: left; }
+.seat.right  { grid-area: right; }
+
+/* Each face reads upright for the player sitting on that edge of the table. */
+.face { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.seat.top .face   { transform: rotate(180deg); }
+.seat.left .face  { transform: rotate(90deg); }
+.seat.right .face { transform: rotate(-90deg); }
+
+.big {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 96px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+}
+.seat.left .face, .seat.right .face { gap: 2px; }
+.seat.left .big, .seat.right .big { font-size: 54px; }
+.seat.left .bankline, .seat.right .bankline { font-size: 13px; }
+.seat.left .bar, .seat.right .bar { width: 100px; }
+
+.label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.bankline {
+    font-family: var(--display);
+    font-size: 15px;
+    min-height: 1.2em;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+.bar {
+    width: 120px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--felt-line);
+    overflow: hidden;
+    margin-top: 4px;
+}
+.bar i { display: block; height: 100%; background: var(--muted); transition: width .1s linear; }
+
+/* Waiting seats stay quiet and show only their bank. */
+.seat:not(.active) .big { font-size: 52px; color: var(--muted); }
+.seat.left:not(.active) .big, .seat.right:not(.active) .big { font-size: 40px; }
+
+/* The player on turn gets an ivory tile face. */
+.seat.active { background: var(--ivory); color: var(--ink); }
+.seat.active .label, .seat.active .bankline { color: var(--ink-muted); }
+.seat.active .bar { background: #D8CFB6; }
+.seat.active .bar i { background: var(--ink); }
+.seat.active.in-bank .big { color: var(--amber-ink); }
+.seat.active.in-bank .bar i { background: var(--amber); }
+
+.seat.expired { background: var(--red); color: #fff; animation: flash .5s 3; }
+.seat.expired .label, .seat.expired .bankline { color: #FFE1DA; }
+@keyframes flash { 50% { background: var(--red-deep); } }
+
+.screen.paused .seat.active:not(.expired) { background: var(--ivory-dim); }
+
+/* ---------- center controls ---------- */
+
+.mid {
+    grid-area: mid;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 6px;
+}
+
+.status {
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    min-height: 2.8em;
+    display: flex;
+    align-items: flex-end;
+}
+
+.ctrl {
+    width: 100%;
+    max-width: 112px;
+    border: 1px solid var(--felt-line);
+    background: var(--felt-raised);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 11px 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.ctrl:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.ctrl:disabled { opacity: .35; cursor: default; }
+.ctrl.primary { background: var(--text); color: var(--felt); border-color: var(--text); }
+.ctrl.confirm { background: var(--amber); color: var(--ink); border-color: var(--amber); }
+.ctrl.quiet { background: transparent; font-family: var(--display); font-size: 13px; color: var(--muted); }
+.ctrl.wide { max-width: none; margin-top: 8px; }
+
+/* ---------- settings sheet ---------- */
+
+.sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 12, 10, .7);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 10;
+}
+
+.sheet {
+    width: 100%;
+    max-width: 480px;
+    box-sizing: border-box;
+    background: var(--felt);
+    border-top: 1px solid var(--felt-line);
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px max(24px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.sheet h2 { margin: 0; font-size: 20px; font-weight: 600; }
+.sheet p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.sheet .hint { font-size: 13px; }
+
+.presets { display: flex; gap: 8px; margin-block: 6px; }
+.preset {
+    flex: 1;
+    border: 1px solid var(--felt-line);
+    background: var(--felt-raised);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 14px 0;
+    font-family: var(--display);
+    font-size: 16px;
+    cursor: pointer;
+}
+.preset.selected { background: var(--ivory); color: var(--ink); border-color: var(--ivory); }
+
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    font-size: 16px;
+}
+.toggle input { width: 22px; height: 22px; accent-color: var(--amber); }
+
+/* ---------- loading and errors ---------- */
+
+.loading {
+    height: 100dvh;
+    display: grid;
+    place-items: center;
+    background: var(--felt);
+    color: var(--muted);
+    font-family: var(--display);
+    font-size: 14px;
+    letter-spacing: .1em;
+}
+.loading::after { content: var(--blazor-load-percentage-text, "Loading"); }
+
+#blazor-error-ui {
+    background: var(--amber);
+    color: var(--ink);
+    bottom: 0;
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.8rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+#blazor-error-ui .reload { color: var(--ink); font-weight: 600; }
+#blazor-error-ui .dismiss { cursor: pointer; position: absolute; right: 0.75rem; top: 0.6rem; }
+
+@media (prefers-reduced-motion: reduce) {
+    .seat, .bar i { transition: none; }
+    .seat.expired { animation: none; }
+}

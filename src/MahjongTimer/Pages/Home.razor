@@ -1,0 +1,185 @@
+@page "/"
+@using System.Diagnostics
+@using System.Text.Json
+@using MahjongTimer.Game
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<PageTitle>Riichi Table Clock</PageTitle>
+
+<div class="screen @(_clock.IsPaused ? "paused" : "")">
+    <SeatPanel Clock="_clock" SeatIndex="2" Position="top" OnTap="TapSeat" />
+    <SeatPanel Clock="_clock" SeatIndex="3" Position="left" OnTap="TapSeat" />
+
+    <div class="mid">
+        <div class="status">@Status</div>
+        <button class="ctrl primary" disabled="@(!_clock.IsHandInProgress)" @onclick="TogglePause">
+            @(_clock.IsPaused ? "Resume" : "Pause")
+        </button>
+        <button class="ctrl" disabled="@(!_clock.CanUndo)" @onclick="Undo">Undo</button>
+        <button class="ctrl @(_confirmingNewHand ? "confirm" : "")" @onclick="NewHand">
+            @(_confirmingNewHand ? "Tap to confirm" : "New hand")
+        </button>
+        <button class="ctrl quiet" @onclick="OpenSettings">@_clock.Setting</button>
+    </div>
+
+    <SeatPanel Clock="_clock" SeatIndex="1" Position="right" OnTap="TapSeat" />
+    <SeatPanel Clock="_clock" SeatIndex="0" Position="bottom" OnTap="TapSeat" />
+</div>
+
+@if (_settingsOpen)
+{
+    <div class="sheet-backdrop" @onclick="CloseSettings">
+        <div class="sheet" @onclick:stopPropagation="true">
+            <h2>Time per player</h2>
+            <p>Base seconds every turn, plus a bank that refills each hand.</p>
+            <div class="presets">
+                @foreach (var preset in TimeSetting.Presets)
+                {
+                    <button class="preset @(preset == _clock.Setting ? "selected" : "")"
+                            aria-pressed="@(preset == _clock.Setting)"
+                            @onclick="() => ChooseSetting(preset)">@preset</button>
+                }
+            </div>
+            <p class="hint">Changing the time starts a new hand.</p>
+
+            <label class="toggle">
+                <input type="checkbox" checked="@_soundOn" @onchange="ToggleSound" />
+                <span>Beep when time runs out</span>
+            </label>
+            <p class="hint">The phone always vibrates. The beep plays at media volume.</p>
+
+            <button class="ctrl primary wide" @onclick="CloseSettings">Done</button>
+        </div>
+    </div>
+}
+
+@code {
+    private static readonly TimeSpan TickInterval = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan NewHandConfirmWindow = TimeSpan.FromSeconds(3);
+
+    private readonly TableClock _clock = new(TimeSetting.Default);
+    private readonly CancellationTokenSource _stop = new();
+    private IJSObjectReference? _js;
+    private bool _soundOn = true;
+    private bool _settingsOpen;
+    private bool _confirmingNewHand;
+    private DateTime _confirmStartedUtc;
+
+    private string Status =>
+        !_clock.IsHandInProgress ? "First player taps to start"
+        : _clock.IsPaused ? "Paused"
+        : "";
+
+    protected override void OnInitialized() => _clock.TimeExpired += OnTimeExpired;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _js = await JS.InvokeAsync<IJSObjectReference>("import", "./js/table.js");
+        await _js.InvokeVoidAsync("init");
+        LoadSettings(await _js.InvokeAsync<string?>("loadSettings"));
+        StateHasChanged();
+        _ = RunClockAsync();
+    }
+
+    private async Task RunClockAsync()
+    {
+        using var timer = new PeriodicTimer(TickInterval);
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            while (await timer.WaitForNextTickAsync(_stop.Token))
+            {
+                _clock.Tick(stopwatch.Elapsed);
+                stopwatch.Restart();
+                if (_confirmingNewHand && DateTime.UtcNow - _confirmStartedUtc > NewHandConfirmWindow)
+                    _confirmingNewHand = false;
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private void OnTimeExpired()
+    {
+        if (_js is not null) _ = _js.InvokeVoidAsync("timeUp", _soundOn).AsTask();
+    }
+
+    private async Task TapSeat(int seat)
+    {
+        if (_js is not null) await _js.InvokeVoidAsync("unlockAudio");
+        _clock.Tap(seat);
+    }
+
+    private void TogglePause() => _clock.TogglePause();
+
+    private void Undo() => _clock.Undo();
+
+    private void NewHand()
+    {
+        // A stray tap mid-hand would wipe everyone's bank, so ask twice once play has started.
+        if (_clock.IsHandInProgress && !_confirmingNewHand)
+        {
+            _confirmingNewHand = true;
+            _confirmStartedUtc = DateTime.UtcNow;
+            return;
+        }
+        _confirmingNewHand = false;
+        _clock.NewHand();
+    }
+
+    private void OpenSettings()
+    {
+        if (_clock.IsHandInProgress && !_clock.IsPaused) _clock.TogglePause();
+        _settingsOpen = true;
+    }
+
+    private void CloseSettings() => _settingsOpen = false;
+
+    private async Task ChooseSetting(TimeSetting setting)
+    {
+        if (setting != _clock.Setting) _clock.ChangeSetting(setting);
+        await SaveSettings();
+    }
+
+    private async Task ToggleSound(ChangeEventArgs e)
+    {
+        _soundOn = e.Value is true;
+        await SaveSettings();
+    }
+
+    private void LoadSettings(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return;
+        try
+        {
+            var saved = JsonSerializer.Deserialize<SavedSettings>(json);
+            if (saved is null) return;
+            var setting = TimeSetting.Presets.FirstOrDefault(p => p.BaseSeconds == saved.BaseSeconds && p.BankSeconds == saved.BankSeconds);
+            if (setting is not null) _clock.ChangeSetting(setting);
+            _soundOn = saved.SoundOn;
+        }
+        catch (JsonException) { }
+    }
+
+    private async Task SaveSettings()
+    {
+        if (_js is null) return;
+        var json = JsonSerializer.Serialize(new SavedSettings(_clock.Setting.BaseSeconds, _clock.Setting.BankSeconds, _soundOn));
+        await _js.InvokeVoidAsync("saveSettings", json);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _stop.Cancel();
+        _clock.TimeExpired -= OnTimeExpired;
+        if (_js is not null)
+        {
+            try { await _js.DisposeAsync(); } catch (JSDisconnectedException) { }
+        }
+    }
+
+    private sealed record SavedSettings(int BaseSeconds, int BankSeconds, bool SoundOn);
+}

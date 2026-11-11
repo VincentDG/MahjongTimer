@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MahjongTimer/MahjongTimer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MahjongTimer.Tests/MahjongTimer.Tests.csproj" />
+  </Folder>
+</Solution>
