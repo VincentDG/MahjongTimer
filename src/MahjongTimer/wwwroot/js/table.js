@@ -14,9 +14,16 @@ async function keepAwake() {
     }
 }
 
-export function init() {
+// page is the C# Home component; it is told when the app leaves the screen so the clock can pause.
+export function init(page) {
     keepAwake();
-    document.addEventListener('visibilitychange', keepAwake);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            page.invokeMethodAsync('OnPageHidden').catch(() => { });
+        } else {
+            keepAwake();
+        }
+    });
 }
 
 // Audio can only start after a user gesture, so every tap calls this.

@@ -61,6 +61,7 @@
     private readonly TableClock _clock = new(TimeSetting.Default);
     private readonly CancellationTokenSource _stop = new();
     private IJSObjectReference? _js;
+    private DotNetObjectReference<Home>? _self;
     private bool _soundOn = true;
     private bool _settingsOpen;
     private bool _confirmingNewHand;
@@ -78,7 +79,8 @@
         if (!firstRender) return;
 
         _js = await JS.InvokeAsync<IJSObjectReference>("import", "./js/table.js");
-        await _js.InvokeVoidAsync("init");
+        _self = DotNetObjectReference.Create(this);
+        await _js.InvokeVoidAsync("init", _self);
         LoadSettings(await _js.InvokeAsync<string?>("loadSettings"));
         StateHasChanged();
         _ = RunClockAsync();
@@ -105,6 +107,14 @@
     private void OnTimeExpired()
     {
         if (_js is not null) _ = _js.InvokeVoidAsync("timeUp", _soundOn).AsTask();
+    }
+
+    // Called from table.js when the app leaves the screen (app switch, screen off, tab change).
+    [JSInvokable]
+    public void OnPageHidden()
+    {
+        _clock.Pause();
+        StateHasChanged();
     }
 
     private async Task TapSeat(int seat)
@@ -179,6 +189,7 @@
         {
             try { await _js.DisposeAsync(); } catch (JSDisconnectedException) { }
         }
+        _self?.Dispose();
     }
 
     private sealed record SavedSettings(int BaseSeconds, int BankSeconds, bool SoundOn);

@@ -157,6 +157,28 @@ public class TableClockTests
     }
 
     [Fact]
+    public void Pause_keeps_the_clock_paused_when_called_twice()
+    {
+        var clock = NewClock();
+        clock.Tap(Near);
+        clock.Pause();
+        clock.Pause();
+        Run(clock, 10);
+
+        Assert.True(clock.IsPaused);
+        Assert.Equal(5, clock.BaseLeft);
+    }
+
+    [Fact]
+    public void Pause_before_the_hand_starts_does_nothing()
+    {
+        var clock = NewClock();
+        clock.Pause();
+
+        Assert.False(clock.IsPaused);
+    }
+
+    [Fact]
     public void Undo_returns_the_turn_with_time_restored()
     {
         var clock = NewClock();

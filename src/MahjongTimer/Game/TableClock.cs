@@ -91,6 +91,13 @@ public sealed class TableClock
         IsPaused = !IsPaused;
     }
 
+    /// <summary>Pauses a running hand. Unlike <see cref="TogglePause"/>, calling it again keeps it paused.</summary>
+    public void Pause()
+    {
+        if (ActiveSeat is null) return;
+        IsPaused = true;
+    }
+
     /// <summary>Steps back one tap within the current hand, restoring everyone's time as it was.</summary>
     public void Undo()
     {
