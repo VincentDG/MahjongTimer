@@ -401,7 +401,7 @@ button { font: inherit; color: inherit; }
     cursor: pointer;
 }
 .calc-box.active { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }
-.calc-text { font-family: var(--display); font-size: 15px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.calc-text { font-family: var(--display); font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .calc-box.active .calc-text::after { content: "▏"; color: var(--amber); }
 .calc-remove { background: none; border: 0; color: var(--muted); font-size: 16px; padding: 0 2px; }
 .calc-add {
