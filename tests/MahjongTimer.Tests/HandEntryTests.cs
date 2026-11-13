@@ -112,6 +112,33 @@ public class HandEntryTests
         Assert.Null((Example with { Closed = "23m406p608p11z" }).Read());
 
     [Fact]
+    public void An_unfinished_hand_is_not_a_mistake()
+    {
+        // The hand from the screenshot: 11 closed tiles + the winning tile = 12 of 14.
+        var entry = new HandEntry { Closed = "1z1z1z3z3z3z2z2z2z5z5z", Winning = "4z" };
+
+        Assert.Equal(12, entry.TileCount);
+        Assert.Null(entry.Read());
+        Assert.False(entry.HasMistake);
+    }
+
+    [Theory]
+    [InlineData("12m", "")]   // a chi still being typed
+    [InlineData("777z,1", "")] // digits waiting for a suit
+    [InlineData("", "11s")]   // a kan still being typed
+    public void Partly_typed_sets_are_not_mistakes(string open, string kan) =>
+        Assert.False(new HandEntry { Closed = "23m", Open = open, ConcealedKans = kan == "" ? [] : [kan] }.HasMistake);
+
+    [Theory]
+    [InlineData("8z", "", "")]      // not a tile
+    [InlineData("", "124m", "")]    // can never be a set
+    [InlineData("", "", "12s")]     // can never be a kan
+    [InlineData("11112222333344445z", "", "")] // more than 14 tiles
+    [InlineData("55555m", "", "")]  // a fifth copy, even unfinished
+    public void Real_mistakes_show_while_typing(string closed, string open, string kan) =>
+        Assert.True(new HandEntry { Closed = closed, Open = open, ConcealedKans = kan == "" ? [] : [kan] }.HasMistake);
+
+    [Fact]
     public void More_than_five_dora_indicators_is_invalid() =>
         Assert.Null((Example with { Dora = "123456s" }).Read());
 }

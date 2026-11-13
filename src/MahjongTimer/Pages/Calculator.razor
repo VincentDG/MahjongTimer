@@ -91,7 +91,8 @@
                 }
                 <button class="calc-key comma" aria-label="Comma" @onclick='() => Type(",")'>,</button>
             </div>
-            @if (Hand is null && _entry.TileCount > 0)
+            @* Only for real mistakes, or a full 14 tiles that still isn't a hand; an unfinished hand just shows its count. *@
+            @if (_entry.HasMistake || (Hand is null && _entry.TileCount == HandEntry.TilesInWinningHand))
             {
                 <span class="calc-invalid">Invalid hand</span>
             }
