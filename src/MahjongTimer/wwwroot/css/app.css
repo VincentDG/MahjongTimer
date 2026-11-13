@@ -271,6 +271,17 @@ button { font: inherit; color: inherit; }
     overflow: hidden;
     user-select: none;
 }
+/* If the phone has already turned the page to landscape (iPhone ignores the portrait lock,
+   and so does any browser tab with auto-rotate on), draw the calculator upright instead. */
+@media (orientation: landscape) {
+    .calculator {
+        width: 100vw;
+        height: 100dvh;
+        transform: none;
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+}
 .calculator.on-conditions {
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas: "head head" "conditions result";
@@ -312,7 +323,7 @@ button { font: inherit; color: inherit; }
 }
 .calc-dora { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .calc-dora .calc-slots + .calc-label { margin-left: 10px; }
-.calc-slots { display: flex; gap: 2px; --tw: 6vw; }
+.calc-slots { display: flex; gap: 2px; --tw: 6vmin; }
 .calc-slots .slot {
     width: var(--tw);
     height: calc(var(--tw) * 4 / 3);
@@ -327,7 +338,7 @@ button { font: inherit; color: inherit; }
     align-items: flex-end;
     gap: 6px;
     /* Shrink tiles so every tile fits on one line; never taller than about a ninth of the screen. */
-    --tw: min(calc((100cqw - 60px) / var(--count, 14)), 11vw);
+    --tw: min(calc((100cqw - 60px) / var(--count, 14)), 11vmin);
 }
 .calc-gap { width: 4px; }
 .calc-group { display: flex; gap: 1px; transition: opacity .15s; }
