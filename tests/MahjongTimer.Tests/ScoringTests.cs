@@ -59,9 +59,19 @@ public class HandScoreTests
         Assert.True(score.IsYakuman);
         Assert.Equal("Yakuman", score.Headline);
         Assert.Empty(score.FuLines);
-        Assert.Equal([new ScoreLine("Big three dragons", "Daisangen", 0)], score.HanLines);
+        Assert.Equal([new ScoreLine("Big three dragons", "Daisangen", 1)], score.HanLines);
         Assert.Equal("32,000", score.Payment.Amount);
     }
+
+    [Theory]
+    [InlineData("chuuren-poutou", "double-yakuman", "Pure nine gates", "Junsei chuuren poutou", 2)]
+    [InlineData("chuuren-poutou", "yakuman", "Nine gates", "Chuuren poutou", 1)]
+    [InlineData("kokushi-musou", "double-yakuman", "Thirteen orphans, 13-sided wait", "Kokushi musou juusanmen machi", 2)]
+    [InlineData("suuankou", "double-yakuman", "Four concealed triplets, pair wait", "Suuankou tanki", 2)]
+    [InlineData("suuankou", "yakuman", "Four concealed triplets", "Suuankou", 1)]
+    [InlineData("daisuushii", "double-yakuman", "Big four winds", "Daisuushii", 2)]
+    public void Yakuman_lines_name_the_double_forms(string id, string limit, string english, string japanese, int times) =>
+        Assert.Equal(new ScoreLine(english, japanese, times), HandScore.YakuLine(new ScoreResponseYaku(id, 0, limit), isYakumanHand: true));
 
     [Theory]
     [InlineData(1920, null)]

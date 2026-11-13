@@ -58,7 +58,8 @@ export function score(request) {
             fu: best.fu,
             rawFu: best.rawFu,
             basicPoints: best.basicPoints,
-            yaku: best.yaku.map(y => ({ name: y.name, han: y.han })),
+            // limit is "yakuman" / "double-yakuman" for yakuman, so the special double forms can be named.
+            yaku: best.yaku.map(y => ({ name: y.name, han: y.han, limit: y.limit ?? null })),
             fuLines: best.fuList.map(f => ({ reason: f.reason, value: f.value })),
             dora: best.dora,
             redFives: best.akadora,

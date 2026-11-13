@@ -195,7 +195,7 @@
                 </div>
                 <div class="calc-lists @(score.IsYakuman ? "single" : "")" @ref="_lists">
                     <div class="calc-list">
-                        @foreach (var line in score.HanLines) { @LineName(line)<span>@(score.IsYakuman ? "" : line.Value)</span> }
+                        @foreach (var line in score.HanLines) { @LineName(line)<span>@(score.IsYakuman ? (line.Value > 1 ? $"×{line.Value}" : "") : line.Value)</span> }
                     </div>
                     @if (!score.IsYakuman)
                     {

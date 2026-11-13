@@ -60,7 +60,8 @@ public sealed record ScoreRequest(
     }
 }
 
-public sealed record ScoreResponseYaku(string Name, int Han);
+/// <param name="Limit">For a yakuman: "yakuman", or "double-yakuman" for a form that counts double.</param>
+public sealed record ScoreResponseYaku(string Name, int Han, string? Limit = null);
 
 public sealed record ScoreResponseFu(string Reason, int Value);
 
@@ -134,7 +135,7 @@ public sealed record HandScore(
     {
         var isYakuman = response.BasicPoints >= YakumanBasicPoints;
 
-        var hanLines = (response.Yaku ?? []).Select(yaku => Line(YakuNames, yaku.Name, yaku.Han)).ToList();
+        var hanLines = (response.Yaku ?? []).Select(yaku => YakuLine(yaku, isYakuman)).ToList();
         if (!isYakuman)
         {
             if (response.Dora > 0) hanLines.Add(new ScoreLine("Dora", "Dora", response.Dora));
@@ -185,6 +186,35 @@ public sealed record HandScore(
                 return group.Count() > 1 ? line with { Name = $"{line.Name} ×{group.Count()}" } : line;
             })
             .ToList();
+
+    /// <summary>
+    /// A yaku's line. In a yakuman hand the value is how many yakuman it counts as (2 for the
+    /// double forms), and the double forms of nine gates, thirteen orphans and four concealed
+    /// triplets get their own names.
+    /// </summary>
+    public static ScoreLine YakuLine(ScoreResponseYaku yaku, bool isYakumanHand)
+    {
+        if (!isYakumanHand) return Line(YakuNames, yaku.Name, yaku.Han);
+
+        var multiplier = yaku.Limit switch
+        {
+            "double-yakuman" => 2,
+            "triple-yakuman" => 3,
+            "quadruple-yakuman" => 4,
+            _ => 1,
+        };
+        var names = multiplier == 2 && DoubleYakumanNames.ContainsKey(yaku.Name) ? DoubleYakumanNames : YakuNames;
+        return Line(names, yaku.Name, multiplier);
+    }
+
+    /// <summary>Names for the special forms Mahjong Soul counts as double yakuman.</summary>
+    public static readonly IReadOnlyDictionary<string, (string English, string Japanese)> DoubleYakumanNames =
+        new Dictionary<string, (string, string)>
+        {
+            ["chuuren-poutou"] = ("Pure nine gates", "Junsei chuuren poutou"),
+            ["kokushi-musou"] = ("Thirteen orphans, 13-sided wait", "Kokushi musou juusanmen machi"),
+            ["suuankou"] = ("Four concealed triplets, pair wait", "Suuankou tanki"),
+        };
 
     /// <summary>A breakdown line for a riichi-score id, falling back to the id itself if it's unknown.</summary>
     public static ScoreLine Line(IReadOnlyDictionary<string, (string English, string Japanese)> names, string id, int value) =>
