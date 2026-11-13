@@ -514,21 +514,13 @@ button { font: inherit; color: inherit; }
 }
 .calc-chip[aria-pressed="true"] { background: var(--ivory); color: var(--ink) !important; border-color: var(--ivory); font-weight: 700; }
 .calc-chip:disabled { opacity: .3; cursor: default; }
-.calc-chip.more { border-style: dashed; color: var(--muted) !important; }
 .calc-honba { font-family: var(--display); font-size: 16px; min-width: 2ch; text-align: center; }
 /* Sized for the shortest landscape phones (about 360px tall): rows grow to fit their chips,
    share any spare height, and the column scrolls rather than spilling off the screen. */
 .calc-conditions { grid-auto-rows: minmax(min-content, 1fr); overflow-y: auto; gap: 4px; padding-block: 6px; }
 .calc-cond { grid-template-columns: 64px 1fr; gap: 6px; }
-/* Rows holding two conditions (Win + Riichi, Round wind + Honba). */
 .calc-chips { gap: 4px; }
 .calc-chip { font-size: 11px; padding: 3px 9px; }
-/* Rows holding two conditions (Win + Riichi, Round wind + Honba). The second one is a
-   .calc-pair, so on a narrow screen its label wraps together with its buttons. */
-.calc-cond:has(> .calc-pair) { display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; row-gap: 4px; }
-.calc-cond:has(> .calc-pair) > .calc-label { flex: none; width: 64px; }
-.calc-cond:has(> .calc-pair) .calc-chips { flex-wrap: nowrap; }
-.calc-pair { display: flex; align-items: center; gap: 6px; margin-left: 14px; }
 /* Selected colours for the three conditions players set most. */
 .calc-chip.ron[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: #fff !important; }
 .calc-chip.tsumo[aria-pressed="true"] { background: var(--pink); border-color: var(--pink); color: var(--ink) !important; }

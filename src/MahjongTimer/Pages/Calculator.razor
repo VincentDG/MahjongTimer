@@ -127,12 +127,12 @@
                     @Chip("Ron", !c.IsTsumo, () => Set(c with { IsTsumo = false }), kind: "ron")
                     @Chip("Tsumo", c.IsTsumo, () => Set(c with { IsTsumo = true }), kind: "tsumo")
                 </div>
-                <div class="calc-pair">
+            </div>
+            <div class="calc-cond">
                 <span class="calc-label">Riichi</span>
                 <div class="calc-chips">
                     @Chip("Riichi", c.IsRiichi, () => Set(c with { IsRiichi = !c.IsRiichi, IsDoubleRiichi = false }), !closedHand, kind: "riichi")
                     @Chip("Ippatsu", c.IsIppatsu, () => Set(c with { IsIppatsu = !c.IsIppatsu }), !(c.IsRiichi || c.IsDoubleRiichi))
-                </div>
                 </div>
             </div>
             <div class="calc-cond">
@@ -146,13 +146,13 @@
                 <div class="calc-chips">
                     @foreach (var wind in new[] { Wind.East, Wind.South, Wind.West }) { @Chip(wind.ToString(), c.RoundWind == wind, () => Set(c with { RoundWind = wind })) }
                 </div>
-                <div class="calc-pair">
+            </div>
+            <div class="calc-cond">
                 <span class="calc-label">Honba</span>
                 <div class="calc-chips">
                     @Chip("−", false, () => Set(c with { Honba = c.Honba - 1 }), c.Honba == 0)
                     <span class="calc-honba">@c.Honba</span>
                     @Chip("+", false, () => Set(c with { Honba = c.Honba + 1 }))
-                </div>
                 </div>
             </div>
             <div class="calc-cond">
