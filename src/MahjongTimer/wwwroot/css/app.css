@@ -495,6 +495,13 @@ button { font: inherit; color: inherit; }
 .calc-chip:disabled { opacity: .3; cursor: default; }
 .calc-chip.more { border-style: dashed; color: var(--muted) !important; }
 .calc-honba { font-family: var(--display); font-size: 16px; min-width: 2ch; text-align: center; }
+/* Sized for the shortest landscape phones (about 360px tall): rows grow to fit their chips,
+   share any spare height, and the column scrolls rather than spilling off the screen. */
+.calc-conditions { grid-auto-rows: minmax(min-content, 1fr); overflow-y: auto; gap: 4px; padding-block: 6px; }
+.calc-cond { grid-template-columns: 72px 1fr; gap: 6px; }
+.calc-chips { gap: 4px; }
+.calc-chip { font-size: 12px; padding: 4px 10px; }
+.calc-honba { font-size: 14px; }
 .calc-result {
     grid-area: result;
     padding: 10px 14px;
@@ -511,7 +518,7 @@ button { font: inherit; color: inherit; }
 .calc-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 0; overflow: auto; align-content: start; }
 .calc-lists.single { grid-template-columns: 1fr; }
 .calc-list { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; font-size: 14px; align-content: start; }
-.calc-list span:nth-child(even) { font-family: var(--display); text-align: right; color: var(--ivory); }
+.calc-list span:nth-child(even) { font-family: var(--display); text-align: right; color: var(--ivory); white-space: nowrap; }
 .calc-list .total { border-top: 1px solid var(--felt-line); padding-top: 4px; color: var(--ivory); font-weight: 700; }
 
 @media (prefers-reduced-motion: reduce) {
