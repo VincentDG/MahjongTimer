@@ -286,7 +286,9 @@ button { font: inherit; color: inherit; }
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas: "head head" "conditions result";
 }
-.calculator button { font: inherit; color: inherit; cursor: pointer; }
+/* Only the font family is inherited: each button class sets its own size. (A `font: inherit`
+   here would override those sizes, because `.calculator button` is the more specific rule.) */
+.calculator button { font-family: inherit; color: inherit; cursor: pointer; }
 .calculator button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
 .calc-label {
@@ -499,8 +501,12 @@ button { font: inherit; color: inherit; }
    share any spare height, and the column scrolls rather than spilling off the screen. */
 .calc-conditions { grid-auto-rows: minmax(min-content, 1fr); overflow-y: auto; gap: 4px; padding-block: 6px; }
 .calc-cond { grid-template-columns: 72px 1fr; gap: 6px; }
+/* Rows holding two conditions (Win + Riichi, Round wind + Honba). */
+.calc-cond:has(> .calc-label + .calc-chips + .calc-label) { display: flex; align-items: center; column-gap: 10px; }
+.calc-cond:has(> .calc-label + .calc-chips + .calc-label) > .calc-label:first-child { flex: none; width: 72px; }
+.calc-cond:has(> .calc-label + .calc-chips + .calc-label) > .calc-chips { flex-wrap: nowrap; }
 .calc-chips { gap: 4px; }
-.calc-chip { font-size: 12px; padding: 4px 10px; }
+.calc-chip { font-size: 11px; padding: 3px 9px; }
 .calc-honba { font-size: 14px; }
 .calc-result {
     grid-area: result;

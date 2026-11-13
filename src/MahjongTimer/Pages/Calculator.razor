@@ -120,8 +120,6 @@
                     @Chip("Ron", !c.IsTsumo, () => Set(c with { IsTsumo = false }))
                     @Chip("Tsumo", c.IsTsumo, () => Set(c with { IsTsumo = true }))
                 </div>
-            </div>
-            <div class="calc-cond">
                 <span class="calc-label">Riichi</span>
                 <div class="calc-chips">
                     @Chip("Riichi", c.IsRiichi, () => Set(c with { IsRiichi = !c.IsRiichi, IsDoubleRiichi = false }), !closedHand)
@@ -137,10 +135,8 @@
             <div class="calc-cond">
                 <span class="calc-label">Round wind</span>
                 <div class="calc-chips">
-                    @foreach (var wind in new[] { Wind.East, Wind.South }) { @Chip(wind.ToString(), c.RoundWind == wind, () => Set(c with { RoundWind = wind })) }
+                    @foreach (var wind in new[] { Wind.East, Wind.South, Wind.West }) { @Chip(wind.ToString(), c.RoundWind == wind, () => Set(c with { RoundWind = wind })) }
                 </div>
-            </div>
-            <div class="calc-cond">
                 <span class="calc-label">Honba</span>
                 <div class="calc-chips">
                     @Chip("−", false, () => Set(c with { Honba = c.Honba - 1 }), c.Honba == 0)

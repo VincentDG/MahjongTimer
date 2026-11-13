@@ -35,7 +35,7 @@ One deal, from the first discard until someone wins or it ends in a draw.
 _Avoid_: Kyoku, deal
 
 **Round**:
-The East round or the South round, each made of four or more hands.
+The East round, the South round, or the West round a game runs into when nobody has reached the target score; each is made of four or more hands.
 _Avoid_: Wind round, ba
 
 **Game**:
@@ -43,7 +43,7 @@ A full hanchan: the East round and the South round.
 _Avoid_: Match, hanchan, session
 
 **Round wind**:
-The wind of the current round (East or South), which makes that wind's tiles valuable to every seat.
+The wind of the current round (East, South, or West in an extended game), which makes that wind's tiles valuable to every seat.
 _Avoid_: Prevalent wind, bakaze
 
 **Seat wind**:
