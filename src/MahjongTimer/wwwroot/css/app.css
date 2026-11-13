@@ -406,7 +406,20 @@ button { font: inherit; color: inherit; }
 }
 .calc-box.active { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }
 .calc-text { font-family: var(--display); font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.calc-box.active .calc-text::after { content: "▏"; color: var(--amber); }
+/* The cursor: a thin bar between characters. Tapping a character moves it just after that one. */
+.calc-caret {
+    display: inline-block;
+    width: 0;
+    height: 1.15em;
+    vertical-align: text-bottom;
+    border-left: 2px solid var(--amber);
+    margin: 0 -1px;
+    animation: calc-blink 1s steps(1) infinite;
+}
+@keyframes calc-blink { 50% { opacity: 0; } }
+.calc-char { cursor: text; }
+.calc-tap { display: flex; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .calc-caret { animation: none; } }
 .calc-remove { background: none; border: 0; color: var(--muted); font-size: 16px; padding: 0 2px; }
 .calc-add {
     align-self: center;

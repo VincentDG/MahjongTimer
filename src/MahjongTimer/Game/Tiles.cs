@@ -67,4 +67,31 @@ public static class Mpsz
 
         return new MpszText(tiles, pendingDigits, hasError);
     }
+
+    /// <summary>Writes tiles in short MPSZ form, grouping runs of one suit: 2m, 3m, 4p → "23m4p".</summary>
+    public static string Write(IEnumerable<Tile> tiles)
+    {
+        var text = new System.Text.StringBuilder();
+        char? suit = null;
+        foreach (var tile in tiles)
+        {
+            if (suit is { } current && current != tile.Suit) text.Append(current);
+            text.Append(tile.Rank);
+            suit = tile.Suit;
+        }
+        if (suit is { } last) text.Append(last);
+        return text.ToString();
+    }
+
+    /// <summary>
+    /// The text with the tile at <paramref name="index"/> (in typed order) taken out, rewritten in
+    /// short form. Digits still waiting for a suit are kept at the end.
+    /// </summary>
+    public static string RemoveTile(string text, int index)
+    {
+        var read = Read(text);
+        if (index < 0 || index >= read.Tiles.Count) return text;
+        var kept = read.Tiles.Where((_, i) => i != index);
+        return Write(kept) + string.Concat(read.PendingDigits);
+    }
 }

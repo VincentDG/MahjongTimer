@@ -19,15 +19,21 @@
                     var text = Mpsz.Read(TextOf(field));
                     <span class="calc-label">@label</span>
                     <span class="calc-slots @Dim(field)">
-                        @foreach (var tile in text.Tiles.Take(HandEntry.MaxIndicators)) { <TileView Tile="tile" /> }
+                        @for (var t = 0; t < Math.Min(text.Tiles.Count, HandEntry.MaxIndicators); t++)
+                        {
+                            var at = t; var indicatorField = field;
+                            <span class="calc-tap" title="Tap to remove" @onclick="() => RemoveTile(indicatorField, 0, at)"><TileView Tile="text.Tiles[at]" /></span>
+                        }
                         @for (var i = text.Tiles.Count; i < HandEntry.MaxIndicators; i++) { <span class="slot"></span> }
                     </span>
                 }
             </div>
 
+            @* Tapping a tile here removes it from its field. *@
             <div class="calc-hand" style="--count:@HandLineTileCount()">
                 @TileGroup(new FieldRef(Field.Closed), _entry.Closed)
-                @foreach (var group in OpenGroups()) { @TileGroup(new FieldRef(Field.Open), group) }
+                @{ var openGroups = OpenGroups().ToList(); }
+                @for (var g = 0; g < openGroups.Count; g++) { @TileGroup(new FieldRef(Field.Open), openGroups[g], group: g) }
                 @for (var i = 0; i < _entry.ConcealedKans.Count; i++) { @TileGroup(new FieldRef(Field.Kan, i), _entry.ConcealedKans[i], isConcealedKan: true) }
                 <span class="calc-gap"></span>
                 @TileGroup(new FieldRef(Field.Winning), _entry.Winning, isWinning: true)
@@ -56,8 +62,8 @@
                         var index = i;
                         <div class="calc-field kan">
                             <span class="calc-label">Kan</span>
-                            <div class="calc-box @Active(new FieldRef(Field.Kan, index))" @onclick="() => _active = new FieldRef(Field.Kan, index)">
-                                <span class="calc-text">@_entry.ConcealedKans[index]</span>
+                            <div class="calc-box @Active(new FieldRef(Field.Kan, index))" @onclick="() => Activate(new FieldRef(Field.Kan, index))">
+                                @FieldText(new FieldRef(Field.Kan, index))
                                 <button class="calc-remove" aria-label="Remove concealed kan" @onclick="() => RemoveKan(index)" @onclick:stopPropagation="true">×</button>
                             </div>
                         </div>
@@ -219,6 +225,7 @@
 
     private HandEntry _entry = new();
     private FieldRef _active = new(Field.Closed);
+    private int _caret; // Cursor position in the active field's text: 0 = before the first character.
     private WinConditions _conditions = new();
     private bool _onConditions;
     private IJSObjectReference? _scoring;
@@ -248,25 +255,60 @@
         _ => _entry with { ConcealedKans = _entry.ConcealedKans.Select((kan, i) => i == field.KanIndex ? text : kan).ToList() },
     };
 
-    private void Type(string key) => SetText(_active, TextOf(_active) + key);
+    /// <summary>Makes a field the one being typed into, with the cursor at its end.</summary>
+    private void Activate(FieldRef field)
+    {
+        _active = field;
+        _caret = TextOf(field).Length;
+    }
 
+    /// <summary>Inserts at the cursor and moves the cursor past what was typed.</summary>
+    private void Type(string key)
+    {
+        var text = TextOf(_active);
+        var at = Math.Clamp(_caret, 0, text.Length);
+        SetText(_active, text.Insert(at, key));
+        _caret = at + key.Length;
+    }
+
+    /// <summary>Deletes the character just before the cursor.</summary>
     private void Backspace()
     {
         var text = TextOf(_active);
-        if (text.Length > 0) SetText(_active, text[..^1]);
+        var at = Math.Clamp(_caret, 0, text.Length);
+        if (at == 0) return;
+        SetText(_active, text.Remove(at - 1, 1));
+        _caret = at - 1;
+    }
+
+    /// <summary>Removes one tile, tapped in the tile picture, from its field.</summary>
+    /// <param name="group">For the Open field: which comma-separated set the tile is in.</param>
+    private void RemoveTile(FieldRef field, int group, int index)
+    {
+        if (field.Field == Field.Open)
+        {
+            var groups = OpenGroups().ToList();
+            groups[group] = Mpsz.RemoveTile(groups[group], index);
+            SetText(field, string.Join(",", groups.Where(text => text.Length > 0)));
+        }
+        else
+        {
+            SetText(field, Mpsz.RemoveTile(TextOf(field), index));
+        }
+        Activate(field);
     }
 
     private void AddKan()
     {
         if (_entry.ConcealedKans.Count >= MaxConcealedKans) return;
         _entry = _entry with { ConcealedKans = [.. _entry.ConcealedKans, ""] };
-        _active = new FieldRef(Field.Kan, _entry.ConcealedKans.Count - 1);
+        Activate(new FieldRef(Field.Kan, _entry.ConcealedKans.Count - 1));
     }
 
     private void RemoveKan(int index)
     {
         _entry = _entry with { ConcealedKans = _entry.ConcealedKans.Where((_, i) => i != index).ToList() };
-        _active = new FieldRef(Field.Closed);
+        Activate(new FieldRef(Field.Closed));
     }
 
     private async Task ShowConditions()
@@ -313,7 +355,11 @@
 
     private string Dim(FieldRef field) => _active == field ? "" : "dim";
 
-    private RenderFragment TileGroup(FieldRef field, string text, bool isWinning = false, bool isConcealedKan = false, bool dim = true) => __builder =>
+    /// <summary>
+    /// One field's tiles in the picture. On the input screen (<paramref name="dim"/> true) the
+    /// tiles dim when their field isn't active, and tapping one removes it.
+    /// </summary>
+    private RenderFragment TileGroup(FieldRef field, string text, bool isWinning = false, bool isConcealedKan = false, bool dim = true, int group = 0) => __builder =>
     {
         var read = Mpsz.Read(text);
         if (read.Tiles.Count == 0 && read.PendingDigits.Count == 0) return;
@@ -321,7 +367,17 @@
         <span class="calc-group @(isWinning ? "winning" : "") @(dim ? Dim(field) : "")">
             @for (var i = 0; i < read.Tiles.Count; i++)
             {
-                <TileView Tile="read.Tiles[i]" FaceDown="@(faceDownEnds && (i == 0 || i == 3))" />
+                var at = i;
+                var tile = read.Tiles[at];
+                var faceDown = faceDownEnds && (at == 0 || at == 3);
+                if (dim)
+                {
+                    <span class="calc-tap" title="Tap to remove" @onclick="() => RemoveTile(field, group, at)"><TileView Tile="tile" FaceDown="faceDown" /></span>
+                }
+                else
+                {
+                    <TileView Tile="tile" FaceDown="faceDown" />
+                }
             }
             @foreach (var digit in read.PendingDigits) { <TileView Pending="digit" /> }
         </span>
@@ -331,8 +387,34 @@
     {
         <div class="calc-field @kind">
             <span class="calc-label">@label</span>
-            <div class="calc-box @Active(field)" @onclick="() => _active = field"><span class="calc-text">@TextOf(field)</span></div>
+            <div class="calc-box @Active(field)" @onclick="() => Activate(field)">@FieldText(field)</div>
         </div>
+    };
+
+    /// <summary>
+    /// A field's text. In the active field each character can be tapped to put the cursor just
+    /// after it; tapping the empty part of the box (handled by the box) puts it at the end.
+    /// </summary>
+    private RenderFragment FieldText(FieldRef field) => __builder =>
+    {
+        var text = TextOf(field);
+        <span class="calc-text">
+            @if (_active != field)
+            {
+                @text
+            }
+            else
+            {
+                var caret = Math.Clamp(_caret, 0, text.Length);
+                @if (caret == 0) { <span class="calc-caret"></span> }
+                @for (var i = 0; i < text.Length; i++)
+                {
+                    var after = i + 1;
+                    <span class="calc-char" @onclick="() => _caret = after" @onclick:stopPropagation="true">@text[i]</span>
+                    @if (after == caret) { <span class="calc-caret"></span> }
+                }
+            }
+        </span>
     };
 
     /// <summary>A toggle chip. <paramref name="kind"/> gives it its own colour when pressed (ron, tsumo, riichi).</summary>

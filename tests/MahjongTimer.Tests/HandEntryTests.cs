@@ -27,6 +27,23 @@ public class MpszTests
     }
 
     [Theory]
+    [InlineData("1z1z1z", "111z")]
+    [InlineData("23m456p0s", "23m456p0s")]
+    [InlineData("1m2m3p", "12m3p")]
+    public void Write_uses_the_short_form(string input, string expected) =>
+        Assert.Equal(expected, Mpsz.Write(Mpsz.Read(input).Tiles));
+
+    [Theory]
+    [InlineData("23m456p", 0, "3m456p")]   // first tile
+    [InlineData("23m456p", 3, "23m46p")]   // a middle tile
+    [InlineData("23m4p", 2, "23m")]        // the only tile of a suit
+    [InlineData("1z1z1z", 1, "11z")]       // rewritten in short form
+    [InlineData("23m45", 0, "3m45")]       // digits waiting for a suit stay at the end
+    [InlineData("23m", 7, "23m")]          // out of range: unchanged
+    public void RemoveTile_takes_out_one_tile(string input, int index, string expected) =>
+        Assert.Equal(expected, Mpsz.RemoveTile(input, index));
+
+    [Theory]
     [InlineData("8z")]  // honours stop at 7z
     [InlineData("0z")]  // no red honours
     [InlineData("m")]   // suit letter with no digits
