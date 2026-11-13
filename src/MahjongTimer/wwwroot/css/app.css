@@ -285,6 +285,8 @@ button { font: inherit; color: inherit; }
     }
 }
 .calculator.on-conditions {
+    /* Conditions 40%, result 60%: the result's lists need the width more. */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas: "head head" "conditions result";
 }
@@ -506,12 +508,14 @@ button { font: inherit; color: inherit; }
 .calc-conditions { grid-auto-rows: minmax(min-content, 1fr); overflow-y: auto; gap: 4px; padding-block: 6px; }
 .calc-cond { grid-template-columns: 64px 1fr; gap: 6px; }
 /* Rows holding two conditions (Win + Riichi, Round wind + Honba). */
-.calc-cond:has(> .calc-label + .calc-chips + .calc-label) { display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; row-gap: 4px; }
-.calc-cond:has(> .calc-label + .calc-chips + .calc-label) > .calc-label:first-child { flex: none; width: 64px; }
-.calc-cond:has(> .calc-label + .calc-chips + .calc-label) > .calc-chips { flex-wrap: nowrap; }
 .calc-chips { gap: 4px; }
 .calc-chip { font-size: 11px; padding: 3px 9px; }
-.calc-cond .calc-label.second { margin-left: 14px; }
+/* Rows holding two conditions (Win + Riichi, Round wind + Honba). The second one is a
+   .calc-pair, so on a narrow screen its label wraps together with its buttons. */
+.calc-cond:has(> .calc-pair) { display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; row-gap: 4px; }
+.calc-cond:has(> .calc-pair) > .calc-label { flex: none; width: 64px; }
+.calc-cond:has(> .calc-pair) .calc-chips { flex-wrap: nowrap; }
+.calc-pair { display: flex; align-items: center; gap: 6px; margin-left: 14px; }
 /* Selected colours for the three conditions players set most. */
 .calc-chip.ron[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: #fff !important; }
 .calc-chip.tsumo[aria-pressed="true"] { background: var(--pink); border-color: var(--pink); color: var(--ink) !important; }
@@ -521,8 +525,6 @@ button { font: inherit; color: inherit; }
 .calc-points small { margin-left: 0; }
 .calc-win-type { color: var(--red); font-weight: 600; }
 .calc-win-type.tsumo { color: var(--pink); }
-.calc-line-name { display: grid; line-height: 1.2; }
-.calc-line-name small { font-size: 11px; color: var(--muted); }
 .calc-honba { font-size: 14px; }
 .calc-result {
     grid-area: result;
@@ -545,15 +547,16 @@ button { font: inherit; color: inherit; }
    Each bold monospace character is about 0.7em wide; 24px covers the gap between them. */
 .calc-result { container-type: inline-size; }
 .calc-points { flex-wrap: wrap; font-size: min(48px, calc((100cqw - 24px) / (var(--chars, 10) * 0.7))); }
-/* A scrollbar, if the lists ever need one, gets its own gutter instead of covering the numbers. */
-.calc-lists { scrollbar-gutter: stable; }
-.calc-list { font-size: 13px; gap: 3px 12px; }
-.calc-line-name small { font-size: 10px; }
-.calc-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 0; overflow: auto; align-content: start; }
+/* Yaku and fu lists: one 12px line per entry (English, then romaji), so the worst case
+   (about 11 yaku lines) fits a 360px-tall phone. A scrollbar, if ever needed, gets its own
+   gutter instead of covering the numbers. */
+.calc-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 0; overflow: auto; align-content: start; scrollbar-gutter: stable; }
 .calc-lists.single { grid-template-columns: 1fr; }
-.calc-list { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; font-size: 14px; align-content: start; }
-.calc-list span:nth-child(even) { font-family: var(--display); text-align: right; color: var(--ivory); white-space: nowrap; }
-.calc-list .total { border-top: 1px solid var(--felt-line); padding-top: 4px; color: var(--ivory); font-weight: 700; }
+.calc-list { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; font-size: 12px; line-height: 1.4; align-content: start; }
+.calc-list > span:nth-child(even) { font-family: var(--display); text-align: right; color: var(--ivory); white-space: nowrap; }
+.calc-line-name { display: flex; align-items: baseline; gap: 5px; min-width: 0; white-space: nowrap; }
+.calc-line-name > * { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.calc-line-name > small { flex-shrink: 2; font-size: 10px; color: var(--muted); }
 
 @media (prefers-reduced-motion: reduce) {
     .calc-group { transition: none; }

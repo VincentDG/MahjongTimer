@@ -121,10 +121,12 @@
                     @Chip("Ron", !c.IsTsumo, () => Set(c with { IsTsumo = false }), kind: "ron")
                     @Chip("Tsumo", c.IsTsumo, () => Set(c with { IsTsumo = true }), kind: "tsumo")
                 </div>
-                <span class="calc-label second">Riichi</span>
+                <div class="calc-pair">
+                <span class="calc-label">Riichi</span>
                 <div class="calc-chips">
                     @Chip("Riichi", c.IsRiichi, () => Set(c with { IsRiichi = !c.IsRiichi, IsDoubleRiichi = false }), !closedHand, kind: "riichi")
                     @Chip("Ippatsu", c.IsIppatsu, () => Set(c with { IsIppatsu = !c.IsIppatsu }), !(c.IsRiichi || c.IsDoubleRiichi))
+                </div>
                 </div>
             </div>
             <div class="calc-cond">
@@ -138,11 +140,13 @@
                 <div class="calc-chips">
                     @foreach (var wind in new[] { Wind.East, Wind.South, Wind.West }) { @Chip(wind.ToString(), c.RoundWind == wind, () => Set(c with { RoundWind = wind })) }
                 </div>
-                <span class="calc-label second">Honba</span>
+                <div class="calc-pair">
+                <span class="calc-label">Honba</span>
                 <div class="calc-chips">
                     @Chip("−", false, () => Set(c with { Honba = c.Honba - 1 }), c.Honba == 0)
                     <span class="calc-honba">@c.Honba</span>
                     @Chip("+", false, () => Set(c with { Honba = c.Honba + 1 }))
+                </div>
                 </div>
             </div>
             <div class="calc-cond">
@@ -169,7 +173,9 @@
                         else
                         {
                             <span>@score.Han han @score.Fu fu</span>
-                            @if (score.LimitName is { } limit) { <small>@limit</small> }
+                            @* The limit name, and how raw fu rounded up (the list has no total rows). *@
+                            var notes = new[] { score.LimitName, score.RawFu != score.Fu ? $"fu {score.RawFu} → {score.Fu}" : null }.OfType<string>();
+                            @if (notes.Any()) { <small>@string.Join(" · ", notes)</small> }
                         }
                     </div>
                     <div class="calc-points-box">
@@ -184,13 +190,11 @@
                 <div class="calc-lists @(score.IsYakuman ? "single" : "")">
                     <div class="calc-list">
                         @foreach (var line in score.HanLines) { @LineName(line)<span>@(score.IsYakuman ? "" : line.Value)</span> }
-                        @if (!score.IsYakuman) { <span class="total">Han</span><span class="total">@score.Han</span> }
                     </div>
                     @if (!score.IsYakuman)
                     {
                         <div class="calc-list">
                             @foreach (var line in score.FuLines) { @LineName(line)<span>@line.Value</span> }
-                            <span class="total">Fu</span><span class="total">@(score.RawFu == score.Fu ? $"{score.Fu}" : $"{score.RawFu} → {score.Fu}")</span>
                         </div>
                     }
                 </div>
@@ -337,9 +341,9 @@
         <button class="calc-chip @kind" aria-pressed="@(pressed ? "true" : "false")" disabled="@disabled" @onclick="async () => { onClick(); await Rescore(); }">@label</button>
     };
 
-    /// <summary>A breakdown line's name: English, with the Japanese name underneath.</summary>
+    /// <summary>A breakdown line's name on one line: English, then the Japanese name smaller.</summary>
     private static RenderFragment LineName(ScoreLine line) => __builder =>
     {
-        <span class="calc-line-name">@line.Name<small>@line.Japanese</small></span>
+        <span class="calc-line-name" title="@line.Name · @line.Japanese"><span>@line.Name</span><small>@line.Japanese</small></span>
     };
 }

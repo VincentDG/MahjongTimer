@@ -143,9 +143,7 @@ public sealed record HandScore(
         }
 
         // Fu doesn't change a yakuman's value, and riichi-score's fu is wrong for some yakuman.
-        var fuLines = isYakuman
-            ? []
-            : (response.FuLines ?? []).Select(fu => Line(FuNames, fu.Reason, fu.Value)).ToList();
+        var fuLines = isYakuman ? [] : MergeRepeats(response.FuLines ?? []);
 
         return new HandScore(
             response.Han,
@@ -174,6 +172,19 @@ public sealed record HandScore(
         >= 2000 => "Mangan",
         _ => null,
     };
+
+    /// <summary>
+    /// One line per kind of fu, in first-seen order: three closed triplets of simples become
+    /// "Closed triplet ×3" worth 12, so the list fits on one screen.
+    /// </summary>
+    public static IReadOnlyList<ScoreLine> MergeRepeats(IEnumerable<ScoreResponseFu> fu) =>
+        fu.GroupBy(line => line.Reason)
+            .Select(group =>
+            {
+                var line = Line(FuNames, group.Key, group.Sum(item => item.Value));
+                return group.Count() > 1 ? line with { Name = $"{line.Name} ×{group.Count()}" } : line;
+            })
+            .ToList();
 
     /// <summary>A breakdown line for a riichi-score id, falling back to the id itself if it's unknown.</summary>
     public static ScoreLine Line(IReadOnlyDictionary<string, (string English, string Japanese)> names, string id, int value) =>
@@ -237,14 +248,15 @@ public sealed record HandScore(
             ["chiitoitsu"] = ("Seven pairs", "Chiitoitsu"),
             ["closed ron"] = ("Concealed ron", "Menzen kafu"),
             ["tsumo"] = ("Self-draw", "Tsumo"),
-            ["open triplet of simples"] = ("Open triplet, simples", "Minkou"),
-            ["closed triplet of simples"] = ("Closed triplet, simples", "Ankou"),
-            ["open triplet of terminals/honors"] = ("Open triplet, terminals/honours", "Minkou yaochuu"),
-            ["closed triplet of terminals/honors"] = ("Closed triplet, terminals/honours", "Ankou yaochuu"),
-            ["open kan of simples"] = ("Open kan, simples", "Minkan"),
-            ["closed kan of simples"] = ("Closed kan, simples", "Ankan"),
-            ["open kan of terminals/honors"] = ("Open kan, terminals/honours", "Minkan yaochuu"),
-            ["closed kan of terminals/honors"] = ("Closed kan, terminals/honours", "Ankan yaochuu"),
+            // "(T/H)": of terminals or honours, which are worth double.
+            ["open triplet of simples"] = ("Open triplet", "Minkou"),
+            ["closed triplet of simples"] = ("Closed triplet", "Ankou"),
+            ["open triplet of terminals/honors"] = ("Open triplet (T/H)", "Minkou"),
+            ["closed triplet of terminals/honors"] = ("Closed triplet (T/H)", "Ankou"),
+            ["open kan of simples"] = ("Open kan", "Minkan"),
+            ["closed kan of simples"] = ("Closed kan", "Ankan"),
+            ["open kan of terminals/honors"] = ("Open kan (T/H)", "Minkan"),
+            ["closed kan of terminals/honors"] = ("Closed kan (T/H)", "Ankan"),
             ["yakuhai pair"] = ("Value pair", "Yakuhai jantou"),
             ["double wind pair"] = ("Double wind pair", "Renpuuhai jantou"),
             ["kanchan wait"] = ("Middle wait", "Kanchan"),

@@ -81,6 +81,24 @@ public class HandScoreTests
         Assert.Equal(new ScoreLine(english, japanese, 1), HandScore.Line(HandScore.YakuNames, id, 1));
 
     [Fact]
+    public void Repeated_fu_lines_merge_into_one()
+    {
+        ScoreResponseFu[] fu =
+        [
+            new("base", 20), new("closed triplet of simples", 4), new("closed triplet of simples", 4),
+            new("closed triplet of simples", 4), new("tsumo", 2),
+        ];
+
+        Assert.Equal(
+            [
+                new ScoreLine("Base", "Fuutei", 20),
+                new ScoreLine("Closed triplet ×3", "Ankou", 12),
+                new ScoreLine("Self-draw", "Tsumo", 2),
+            ],
+            HandScore.MergeRepeats(fu));
+    }
+
+    [Fact]
     public void Every_riichi_score_fu_reason_has_names()
     {
         // The FuReason list from riichi-score's parse-fu.d.ts.
