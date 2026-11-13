@@ -117,12 +117,12 @@
             <div class="calc-cond">
                 <span class="calc-label">Win</span>
                 <div class="calc-chips">
-                    @Chip("Ron", !c.IsTsumo, () => Set(c with { IsTsumo = false }))
-                    @Chip("Tsumo", c.IsTsumo, () => Set(c with { IsTsumo = true }))
+                    @Chip("Ron", !c.IsTsumo, () => Set(c with { IsTsumo = false }), kind: "ron")
+                    @Chip("Tsumo", c.IsTsumo, () => Set(c with { IsTsumo = true }), kind: "tsumo")
                 </div>
-                <span class="calc-label">Riichi</span>
+                <span class="calc-label second">Riichi</span>
                 <div class="calc-chips">
-                    @Chip("Riichi", c.IsRiichi, () => Set(c with { IsRiichi = !c.IsRiichi, IsDoubleRiichi = false }), !closedHand)
+                    @Chip("Riichi", c.IsRiichi, () => Set(c with { IsRiichi = !c.IsRiichi, IsDoubleRiichi = false }), !closedHand, kind: "riichi")
                     @Chip("Ippatsu", c.IsIppatsu, () => Set(c with { IsIppatsu = !c.IsIppatsu }), !(c.IsRiichi || c.IsDoubleRiichi))
                 </div>
             </div>
@@ -137,7 +137,7 @@
                 <div class="calc-chips">
                     @foreach (var wind in new[] { Wind.East, Wind.South, Wind.West }) { @Chip(wind.ToString(), c.RoundWind == wind, () => Set(c with { RoundWind = wind })) }
                 </div>
-                <span class="calc-label">Honba</span>
+                <span class="calc-label second">Honba</span>
                 <div class="calc-chips">
                     @Chip("−", false, () => Set(c with { Honba = c.Honba - 1 }), c.Honba == 0)
                     <span class="calc-honba">@c.Honba</span>
@@ -147,17 +147,13 @@
             <div class="calc-cond">
                 <span class="calc-label">Rare</span>
                 <div class="calc-chips">
-                    <button class="calc-chip more" @onclick="() => _showRare = !_showRare">@(_showRare ? "Less ▴" : "More ▾")</button>
-                    @if (_showRare)
-                    {
-                        @Chip("Double riichi", c.IsDoubleRiichi, () => Set(c with { IsDoubleRiichi = !c.IsDoubleRiichi, IsRiichi = false }), !closedHand)
-                        @Chip("Rinshan", c.IsRinshan, () => Set(c with { IsRinshan = !c.IsRinshan }), !hasKan || !c.IsTsumo)
-                        @Chip("Chankan", c.IsChankan, () => Set(c with { IsChankan = !c.IsChankan }), c.IsTsumo)
-                        @Chip("Haitei", c.IsHaitei, () => Set(c with { IsHaitei = !c.IsHaitei }), !c.IsTsumo)
-                        @Chip("Houtei", c.IsHoutei, () => Set(c with { IsHoutei = !c.IsHoutei }), c.IsTsumo)
-                        @Chip("Tenhou", c.IsTenhou, () => Set(c with { IsTenhou = !c.IsTenhou }), !c.IsTsumo || !closedHand || !c.IsDealer)
-                        @Chip("Chiihou", c.IsChiihou, () => Set(c with { IsChiihou = !c.IsChiihou }), !c.IsTsumo || !closedHand || c.IsDealer)
-                    }
+                    @Chip("Double riichi", c.IsDoubleRiichi, () => Set(c with { IsDoubleRiichi = !c.IsDoubleRiichi, IsRiichi = false }), !closedHand)
+                    @Chip("Rinshan", c.IsRinshan, () => Set(c with { IsRinshan = !c.IsRinshan }), !hasKan || !c.IsTsumo)
+                    @Chip("Chankan", c.IsChankan, () => Set(c with { IsChankan = !c.IsChankan }), c.IsTsumo)
+                    @Chip("Haitei", c.IsHaitei, () => Set(c with { IsHaitei = !c.IsHaitei }), !c.IsTsumo)
+                    @Chip("Houtei", c.IsHoutei, () => Set(c with { IsHoutei = !c.IsHoutei }), c.IsTsumo)
+                    @Chip("Tenhou", c.IsTenhou, () => Set(c with { IsTenhou = !c.IsTenhou }), !c.IsTsumo || !closedHand || !c.IsDealer)
+                    @Chip("Chiihou", c.IsChiihou, () => Set(c with { IsChiihou = !c.IsChiihou }), !c.IsTsumo || !closedHand || c.IsDealer)
                 </div>
             </div>
         </section>
@@ -166,16 +162,16 @@
             @if (_score is { } score)
             {
                 <div class="calc-headline">@score.Headline</div>
-                <div class="calc-points">@score.Payment.Amount<small>@score.Payment.Label@(_conditions.Honba > 0 ? $" · incl. {_conditions.Honba} honba" : "")</small></div>
+                <div class="calc-points"><span>@score.Payment.Amount</span><small>@score.Payment.Label@(_conditions.Honba > 0 ? $" · incl. {_conditions.Honba} honba" : "")</small></div>
                 <div class="calc-lists @(score.IsYakuman ? "single" : "")">
                     <div class="calc-list">
-                        @foreach (var line in score.HanLines) { <span>@line.Name</span><span>@(score.IsYakuman ? "" : line.Value)</span> }
+                        @foreach (var line in score.HanLines) { @LineName(line)<span>@(score.IsYakuman ? "" : line.Value)</span> }
                         @if (!score.IsYakuman) { <span class="total">Han</span><span class="total">@score.Han</span> }
                     </div>
                     @if (!score.IsYakuman)
                     {
                         <div class="calc-list">
-                            @foreach (var line in score.FuLines) { <span>@line.Name</span><span>@line.Value</span> }
+                            @foreach (var line in score.FuLines) { @LineName(line)<span>@line.Value</span> }
                             <span class="total">Fu</span><span class="total">@(score.RawFu == score.Fu ? $"{score.Fu}" : $"{score.RawFu} → {score.Fu}")</span>
                         </div>
                     }
@@ -203,7 +199,6 @@
     private FieldRef _active = new(Field.Closed);
     private WinConditions _conditions = new();
     private bool _onConditions;
-    private bool _showRare;
     private IJSObjectReference? _scoring;
     private HandScore? _score;
     private string? _scoreError;
@@ -318,8 +313,15 @@
         </div>
     };
 
-    private RenderFragment Chip(string label, bool pressed, Action onClick, bool disabled = false) => __builder =>
+    /// <summary>A toggle chip. <paramref name="kind"/> gives it its own colour when pressed (ron, tsumo, riichi).</summary>
+    private RenderFragment Chip(string label, bool pressed, Action onClick, bool disabled = false, string kind = "") => __builder =>
     {
-        <button class="calc-chip" aria-pressed="@(pressed ? "true" : "false")" disabled="@disabled" @onclick="async () => { onClick(); await Rescore(); }">@label</button>
+        <button class="calc-chip @kind" aria-pressed="@(pressed ? "true" : "false")" disabled="@disabled" @onclick="async () => { onClick(); await Rescore(); }">@label</button>
+    };
+
+    /// <summary>A breakdown line's name: English, with the Japanese name underneath.</summary>
+    private static RenderFragment LineName(ScoreLine line) => __builder =>
+    {
+        <span class="calc-line-name">@line.Name<small>@line.Japanese</small></span>
     };
 }

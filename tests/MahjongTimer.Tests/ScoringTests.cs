@@ -47,8 +47,8 @@ public class HandScoreTests
         var score = HandScore.From(Response(2, 30, 480, "chun"), new WinConditions());
 
         Assert.Equal("2 han 30 fu", score.Headline);
-        Assert.Equal([new ScoreLine("Red dragon", 2), new ScoreLine("Dora", 1)], score.HanLines);
-        Assert.Equal([new ScoreLine("Base", 20)], score.FuLines);
+        Assert.Equal([new ScoreLine("Red dragon", "Chun", 2), new ScoreLine("Dora", "Dora", 1)], score.HanLines);
+        Assert.Equal([new ScoreLine("Base", "Fuutei", 20)], score.FuLines);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class HandScoreTests
         Assert.True(score.IsYakuman);
         Assert.Equal("Yakuman", score.Headline);
         Assert.Empty(score.FuLines);
-        Assert.Equal([new ScoreLine("Daisangen", 0)], score.HanLines);
+        Assert.Equal([new ScoreLine("Big three dragons", "Daisangen", 0)], score.HanLines);
         Assert.Equal("32,000", score.Payment.Amount);
     }
 
@@ -74,11 +74,41 @@ public class HandScoreTests
         Assert.Equal(expected, HandScore.LimitFor(basicPoints));
 
     [Theory]
-    [InlineData("rinshan-kaihou", "Rinshan kaihou")]
-    [InlineData("seat-wind", "Seat wind")]
-    [InlineData("chiitoitsu", "Seven pairs")]
-    public void Yaku_names_are_readable(string id, string expected) =>
-        Assert.Equal(expected, HandScore.YakuName(id));
+    [InlineData("rinshan-kaihou", "After a kan", "Rinshan kaihou")]
+    [InlineData("seat-wind", "Seat wind", "Jikaze")]
+    [InlineData("chiitoitsu", "Seven pairs", "Chiitoitsu")]
+    public void Yaku_have_english_and_japanese_names(string id, string english, string japanese) =>
+        Assert.Equal(new ScoreLine(english, japanese, 1), HandScore.Line(HandScore.YakuNames, id, 1));
+
+    [Fact]
+    public void Every_riichi_score_fu_reason_has_names()
+    {
+        // The FuReason list from riichi-score's parse-fu.d.ts.
+        string[] reasons =
+        [
+            "base", "chiitoitsu", "open triplet of simples", "closed triplet of simples",
+            "open triplet of terminals/honors", "closed triplet of terminals/honors", "open kan of simples",
+            "closed kan of simples", "open kan of terminals/honors", "closed kan of terminals/honors",
+            "yakuhai pair", "double wind pair", "kanchan wait", "penchan wait", "tanki wait", "closed ron", "tsumo",
+        ];
+        Assert.All(reasons, reason => Assert.True(HandScore.FuNames.ContainsKey(reason), reason));
+    }
+
+    [Fact]
+    public void Every_riichi_score_yaku_has_names()
+    {
+        // The YakuName list from riichi-score's models/yaku.d.ts.
+        string[] yaku =
+        [
+            "chiitoitsu", "kokushi-musou", "menzen-tsumo", "pinfu", "riichi", "double-riichi", "ippatsu", "haitei",
+            "houtei", "rinshan-kaihou", "chankan", "tanyao", "iipeiko", "ryanpeikou", "sanankou", "suuankou", "toitoi",
+            "honitsu", "chinitsu", "chanta", "junchan", "honroutou", "sanshoku", "sanshoku-doukou", "ittsuu",
+            "shousangen", "sankantsu", "daisangen", "shousuushii", "daisuushii", "tsuuiisou", "chinroutou",
+            "ryuuiisou", "chuuren-poutou", "suukantsu", "tenhou", "chiihou",
+            "round-wind", "seat-wind", "haku", "hatsu", "chun",
+        ];
+        Assert.All(yaku, id => Assert.True(HandScore.YakuNames.ContainsKey(id), id));
+    }
 }
 
 public class ScoreRequestTests

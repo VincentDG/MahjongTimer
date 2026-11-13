@@ -108,7 +108,8 @@ public sealed record Payment(bool IsTsumo, bool IsDealer, int Ron, int EachNonDe
     private static string Points(int points) => points.ToString("N0", CultureInfo.InvariantCulture);
 }
 
-public sealed record ScoreLine(string Name, int Value);
+/// <summary>One line of the breakdown: English name, Japanese name (romaji), and its han or fu.</summary>
+public sealed record ScoreLine(string Name, string Japanese, int Value);
 
 /// <summary>A scored hand, ready to show: headline, yaku and fu lines, and payment.</summary>
 public sealed record HandScore(
@@ -133,18 +134,18 @@ public sealed record HandScore(
     {
         var isYakuman = response.BasicPoints >= YakumanBasicPoints;
 
-        var hanLines = (response.Yaku ?? []).Select(yaku => new ScoreLine(YakuName(yaku.Name), yaku.Han)).ToList();
+        var hanLines = (response.Yaku ?? []).Select(yaku => Line(YakuNames, yaku.Name, yaku.Han)).ToList();
         if (!isYakuman)
         {
-            if (response.Dora > 0) hanLines.Add(new ScoreLine("Dora", response.Dora));
-            if (response.RedFives > 0) hanLines.Add(new ScoreLine("Red five", response.RedFives));
-            if (response.UraDora > 0) hanLines.Add(new ScoreLine("Ura-dora", response.UraDora));
+            if (response.Dora > 0) hanLines.Add(new ScoreLine("Dora", "Dora", response.Dora));
+            if (response.RedFives > 0) hanLines.Add(new ScoreLine("Red five", "Aka dora", response.RedFives));
+            if (response.UraDora > 0) hanLines.Add(new ScoreLine("Ura-dora", "Ura dora", response.UraDora));
         }
 
         // Fu doesn't change a yakuman's value, and riichi-score's fu is wrong for some yakuman.
         var fuLines = isYakuman
             ? []
-            : (response.FuLines ?? []).Select(fu => new ScoreLine(Capitalise(fu.Reason), fu.Value)).ToList();
+            : (response.FuLines ?? []).Select(fu => Line(FuNames, fu.Reason, fu.Value)).ToList();
 
         return new HandScore(
             response.Han,
@@ -174,17 +175,82 @@ public sealed record HandScore(
         _ => null,
     };
 
-    /// <summary>riichi-score's yaku id as a readable name: "rinshan-kaihou" → "Rinshan kaihou".</summary>
-    public static string YakuName(string id) => id switch
-    {
-        "haku" => "White dragon",
-        "hatsu" => "Green dragon",
-        "chun" => "Red dragon",
-        "round-wind" => "Round wind",
-        "seat-wind" => "Seat wind",
-        "chiitoitsu" => "Seven pairs",
-        _ => Capitalise(id.Replace('-', ' ')),
-    };
+    /// <summary>A breakdown line for a riichi-score id, falling back to the id itself if it's unknown.</summary>
+    public static ScoreLine Line(IReadOnlyDictionary<string, (string English, string Japanese)> names, string id, int value) =>
+        names.TryGetValue(id, out var name)
+            ? new ScoreLine(name.English, name.Japanese, value)
+            : new ScoreLine(Capitalise(id.Replace('-', ' ')), "", value);
+
+    /// <summary>riichi-score yaku ids → (English, Japanese) names.</summary>
+    public static readonly IReadOnlyDictionary<string, (string English, string Japanese)> YakuNames =
+        new Dictionary<string, (string, string)>
+        {
+            ["riichi"] = ("Ready hand", "Riichi"),
+            ["double-riichi"] = ("Double ready hand", "Double riichi"),
+            ["ippatsu"] = ("One shot", "Ippatsu"),
+            ["menzen-tsumo"] = ("Concealed self-draw", "Menzen tsumo"),
+            ["pinfu"] = ("No-points hand", "Pinfu"),
+            ["tanyao"] = ("All simples", "Tanyao"),
+            ["iipeiko"] = ("Pure double sequence", "Iipeikou"),
+            ["ryanpeikou"] = ("Twice pure double sequence", "Ryanpeikou"),
+            ["haitei"] = ("Last tile draw", "Haitei raoyue"),
+            ["houtei"] = ("Last tile discard", "Houtei raoyui"),
+            ["rinshan-kaihou"] = ("After a kan", "Rinshan kaihou"),
+            ["chankan"] = ("Robbing a kan", "Chankan"),
+            ["haku"] = ("White dragon", "Haku"),
+            ["hatsu"] = ("Green dragon", "Hatsu"),
+            ["chun"] = ("Red dragon", "Chun"),
+            ["round-wind"] = ("Round wind", "Bakaze"),
+            ["seat-wind"] = ("Seat wind", "Jikaze"),
+            ["chiitoitsu"] = ("Seven pairs", "Chiitoitsu"),
+            ["sanankou"] = ("Three concealed triplets", "Sanankou"),
+            ["toitoi"] = ("All triplets", "Toitoi"),
+            ["sanshoku"] = ("Mixed triple sequence", "Sanshoku doujun"),
+            ["sanshoku-doukou"] = ("Triple triplets", "Sanshoku doukou"),
+            ["ittsuu"] = ("Pure straight", "Ittsuu"),
+            ["chanta"] = ("Half outside hand", "Chanta"),
+            ["junchan"] = ("Fully outside hand", "Junchan"),
+            ["honroutou"] = ("All terminals and honours", "Honroutou"),
+            ["shousangen"] = ("Little three dragons", "Shousangen"),
+            ["sankantsu"] = ("Three kans", "Sankantsu"),
+            ["honitsu"] = ("Half flush", "Honitsu"),
+            ["chinitsu"] = ("Full flush", "Chinitsu"),
+            ["kokushi-musou"] = ("Thirteen orphans", "Kokushi musou"),
+            ["suuankou"] = ("Four concealed triplets", "Suuankou"),
+            ["daisangen"] = ("Big three dragons", "Daisangen"),
+            ["shousuushii"] = ("Little four winds", "Shousuushii"),
+            ["daisuushii"] = ("Big four winds", "Daisuushii"),
+            ["tsuuiisou"] = ("All honours", "Tsuuiisou"),
+            ["chinroutou"] = ("All terminals", "Chinroutou"),
+            ["ryuuiisou"] = ("All green", "Ryuuiisou"),
+            ["chuuren-poutou"] = ("Nine gates", "Chuuren poutou"),
+            ["suukantsu"] = ("Four kans", "Suukantsu"),
+            ["tenhou"] = ("Blessing of heaven", "Tenhou"),
+            ["chiihou"] = ("Blessing of earth", "Chiihou"),
+        };
+
+    /// <summary>riichi-score fu reasons → (English, Japanese) names.</summary>
+    public static readonly IReadOnlyDictionary<string, (string English, string Japanese)> FuNames =
+        new Dictionary<string, (string, string)>
+        {
+            ["base"] = ("Base", "Fuutei"),
+            ["chiitoitsu"] = ("Seven pairs", "Chiitoitsu"),
+            ["closed ron"] = ("Concealed ron", "Menzen kafu"),
+            ["tsumo"] = ("Self-draw", "Tsumo"),
+            ["open triplet of simples"] = ("Open triplet, simples", "Minkou"),
+            ["closed triplet of simples"] = ("Closed triplet, simples", "Ankou"),
+            ["open triplet of terminals/honors"] = ("Open triplet, terminals/honours", "Minkou yaochuu"),
+            ["closed triplet of terminals/honors"] = ("Closed triplet, terminals/honours", "Ankou yaochuu"),
+            ["open kan of simples"] = ("Open kan, simples", "Minkan"),
+            ["closed kan of simples"] = ("Closed kan, simples", "Ankan"),
+            ["open kan of terminals/honors"] = ("Open kan, terminals/honours", "Minkan yaochuu"),
+            ["closed kan of terminals/honors"] = ("Closed kan, terminals/honours", "Ankan yaochuu"),
+            ["yakuhai pair"] = ("Value pair", "Yakuhai jantou"),
+            ["double wind pair"] = ("Double wind pair", "Renpuuhai jantou"),
+            ["kanchan wait"] = ("Middle wait", "Kanchan"),
+            ["penchan wait"] = ("Edge wait", "Penchan"),
+            ["tanki wait"] = ("Pair wait", "Tanki"),
+        };
 
     private static string Capitalise(string text) =>
         text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
