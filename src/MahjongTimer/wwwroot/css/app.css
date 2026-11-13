@@ -372,7 +372,8 @@ button { font: inherit; color: inherit; }
     grid-area: fields;
     padding: 8px 12px;
     display: grid;
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+    /* Three rows, or four when the kan row is showing; they always share the height. */
+    grid-auto-rows: minmax(0, 1fr);
     gap: 6px;
     min-height: 0;
 }
@@ -382,7 +383,7 @@ button { font: inherit; color: inherit; }
 .calc-field.fill { flex: 1; }
 .calc-field.grows { justify-self: start; min-width: 72px; max-width: 100%; }
 .calc-field.winning { flex: none; width: 64px; }
-.calc-field.kan { flex: none; width: 92px; }
+.calc-field.kan { flex: 1; max-width: 25%; }
 .calc-field.plus { flex: none; width: 52px; justify-items: center; }
 .calc-box {
     background: var(--felt-raised);

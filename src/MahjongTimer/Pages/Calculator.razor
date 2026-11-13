@@ -41,23 +41,29 @@
             </div>
             <div class="calc-row">
                 @FieldBox("Closed", new FieldRef(Field.Closed), "fill")
-                @for (var i = 0; i < _entry.ConcealedKans.Count; i++)
-                {
-                    var index = i;
-                    <div class="calc-field kan">
-                        <span class="calc-label">Kan</span>
-                        <div class="calc-box @Active(new FieldRef(Field.Kan, index))" @onclick="() => _active = new FieldRef(Field.Kan, index)">
-                            <span class="calc-text">@_entry.ConcealedKans[index]</span>
-                            <button class="calc-remove" aria-label="Remove concealed kan" @onclick="() => RemoveKan(index)" @onclick:stopPropagation="true">×</button>
-                        </div>
-                    </div>
-                }
                 <div class="calc-field plus">
                     <span class="calc-label">Kan</span>
                     <button class="calc-add" aria-label="Add concealed kan" disabled="@(_entry.ConcealedKans.Count >= 4)" @onclick="AddKan">+</button>
                 </div>
                 @FieldBox("Winning", new FieldRef(Field.Winning), "winning")
             </div>
+            @* Concealed kans get their own row once there is one: four never fit beside Closed. *@
+            @if (_entry.ConcealedKans.Count > 0)
+            {
+                <div class="calc-row">
+                    @for (var i = 0; i < _entry.ConcealedKans.Count; i++)
+                    {
+                        var index = i;
+                        <div class="calc-field kan">
+                            <span class="calc-label">Kan</span>
+                            <div class="calc-box @Active(new FieldRef(Field.Kan, index))" @onclick="() => _active = new FieldRef(Field.Kan, index)">
+                                <span class="calc-text">@_entry.ConcealedKans[index]</span>
+                                <button class="calc-remove" aria-label="Remove concealed kan" @onclick="() => RemoveKan(index)" @onclick:stopPropagation="true">×</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
             <div class="calc-row">
                 @FieldBox("Open", new FieldRef(Field.Open), "fill")
             </div>

@@ -105,7 +105,8 @@ Terms: see GLOSSARY.md.
   works out chi, pon or kan from each group. (Commas, because `111222333m` could be
   three pons or three chis.)
 - Each concealed kan gets its own small "Kan" field, added with a (+) beside the
-  Closed field (up to 4, each removable). One kan per field, no commas. Kans are
+  Closed field (up to 4, each removable). The Kan fields sit on their own row
+  under Closed, which appears with the first kan (four never fit beside Closed). One kan per field, no commas. Kans are
   never inferred from four tiles in the Closed field. (Four of a tile can be kept
   in the hand without declaring a kan.)
 - The winning tile has its own row, separate from the concealed tiles; tapping a
