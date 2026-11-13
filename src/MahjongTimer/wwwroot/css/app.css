@@ -533,8 +533,12 @@ button { font: inherit; color: inherit; }
     min-height: 0;
 }
 .calc-pending { margin: 0; color: var(--muted); font-size: 14px; text-align: center; }
-.calc-result:has(.calc-headline) { align-content: stretch; grid-template-rows: auto auto minmax(0, 1fr); gap: 10px; }
-.calc-headline { font-family: var(--display); font-size: 20px; color: var(--ivory); }
+.calc-result:has(.calc-headline) { align-content: stretch; grid-template-rows: auto minmax(0, 1fr); gap: 10px; }
+/* Han/fu on the left, points beside it taking the rest of the width. */
+.calc-scoreline { display: flex; align-items: center; gap: 16px; }
+.calc-headline { flex: none; display: grid; font-family: var(--display); font-size: 20px; color: var(--ivory); white-space: nowrap; }
+.calc-headline small { font-size: 13px; color: var(--amber); }
+.calc-points-box { flex: 1; min-width: 0; container-type: inline-size; }
 .calc-points { font-family: var(--display); font-weight: 700; font-size: 48px; line-height: 1; color: var(--amber); }
 .calc-points small { font-family: var(--body); font-weight: 400; font-size: 14px; color: var(--muted); margin-left: 8px; }
 /* Points and Ron/Tsumo share one size: 48px, or smaller when the line wouldn't fit the column.

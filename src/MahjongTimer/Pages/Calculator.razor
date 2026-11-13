@@ -162,12 +162,24 @@
         <section class="calc-result">
             @if (_score is { } score)
             {
-                <div class="calc-headline">@score.Headline</div>
-                @* --chars lets the CSS shrink points and label together when they'd be too wide. *@
-                <div class="calc-points" style="--chars:@(score.Payment.Amount.Length + score.Payment.Label.Length + 1)">
-                    <span>@score.Payment.Amount</span>
-                    <span class="calc-win-type @(_conditions.IsTsumo ? "tsumo" : "")">@score.Payment.Label</span>
-                    @if (_conditions.Honba > 0) { <small>incl. @_conditions.Honba honba</small> }
+                <div class="calc-scoreline">
+                    @* Han and fu on top, the limit name (Mangan…) under them; a yakuman shows only its name. *@
+                    <div class="calc-headline">
+                        @if (score.IsYakuman) { <span>@score.LimitName</span> }
+                        else
+                        {
+                            <span>@score.Han han @score.Fu fu</span>
+                            @if (score.LimitName is { } limit) { <small>@limit</small> }
+                        }
+                    </div>
+                    <div class="calc-points-box">
+                        @* --chars lets the CSS shrink points and label together when they'd be too wide. *@
+                        <div class="calc-points" style="--chars:@(score.Payment.Amount.Length + score.Payment.Label.Length + 1)">
+                            <span>@score.Payment.Amount</span>
+                            <span class="calc-win-type @(_conditions.IsTsumo ? "tsumo" : "")">@score.Payment.Label</span>
+                            @if (_conditions.Honba > 0) { <small>incl. @_conditions.Honba honba</small> }
+                        </div>
+                    </div>
                 </div>
                 <div class="calc-lists @(score.IsYakuman ? "single" : "")">
                     <div class="calc-list">
