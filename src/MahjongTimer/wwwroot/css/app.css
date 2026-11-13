@@ -557,11 +557,12 @@ button { font: inherit; color: inherit; }
    gutter instead of covering the numbers. */
 .calc-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 0; overflow: auto; align-content: start; scrollbar-gutter: stable; }
 .calc-lists.single { grid-template-columns: 1fr; }
-.calc-list { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; font-size: 12px; line-height: 1.4; align-content: start; }
+/* --list-size starts at 12px; js/fit.js lowers it (down to 9px) when a result would not fit. */
+.calc-list { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.15em 8px; font-size: var(--list-size, 12px); line-height: 1.4; align-content: start; }
 .calc-list > span:nth-child(even) { font-family: var(--display); text-align: right; color: var(--ivory); white-space: nowrap; }
 .calc-line-name { display: flex; align-items: baseline; gap: 5px; min-width: 0; white-space: nowrap; }
 .calc-line-name > * { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.calc-line-name > small { flex-shrink: 2; font-size: 10px; color: var(--muted); }
+.calc-line-name > small { flex-shrink: 2; font-size: 0.85em; color: var(--muted); }
 
 @media (prefers-reduced-motion: reduce) {
     .calc-group { transition: none; }

@@ -193,7 +193,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="calc-lists @(score.IsYakuman ? "single" : "")">
+                <div class="calc-lists @(score.IsYakuman ? "single" : "")" @ref="_lists">
                     <div class="calc-list">
                         @foreach (var line in score.HanLines) { @LineName(line)<span>@(score.IsYakuman ? "" : line.Value)</span> }
                     </div>
@@ -230,6 +230,9 @@
     private bool _onConditions;
     private IJSObjectReference? _scoring;
     private HandScore? _score;
+    private HandScore? _fittedScore; // The result the lists were last sized for.
+    private ElementReference _lists;
+    private IJSObjectReference? _fit;
     private string? _scoreError;
 
     /// <summary>The checked hand, or null while the entry is invalid. Recomputed on every render.</summary>
@@ -329,10 +332,25 @@
         _scoreError = response.IsValid ? null : response.Errors.FirstOrDefault() ?? "This hand can't win as entered.";
     }
 
+    /// <summary>
+    /// After a new result is drawn, shrink its lists until they fit (wwwroot/js/fit.js). Only
+    /// when the result changes: the clock behind re-renders this component ten times a second.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_onConditions || _score is null || ReferenceEquals(_score, _fittedScore)) return;
+        _fittedScore = _score;
+        _fit ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/fit.js");
+        await _fit.InvokeVoidAsync("fitLists", _lists);
+    }
+
     public async ValueTask DisposeAsync()
     {
-        if (_scoring is null) return;
-        try { await _scoring.DisposeAsync(); } catch (JSDisconnectedException) { }
+        foreach (var module in new[] { _scoring, _fit })
+        {
+            if (module is null) continue;
+            try { await module.DisposeAsync(); } catch (JSDisconnectedException) { }
+        }
     }
 
     private void Set(WinConditions conditions) =>
