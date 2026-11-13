@@ -537,6 +537,14 @@ button { font: inherit; color: inherit; }
 .calc-headline { font-family: var(--display); font-size: 20px; color: var(--ivory); }
 .calc-points { font-family: var(--display); font-weight: 700; font-size: 48px; line-height: 1; color: var(--amber); }
 .calc-points small { font-family: var(--body); font-weight: 400; font-size: 14px; color: var(--muted); margin-left: 8px; }
+/* Points and Ron/Tsumo share one size: 48px, or smaller when the line wouldn't fit the column.
+   Each bold monospace character is about 0.7em wide; 24px covers the gap between them. */
+.calc-result { container-type: inline-size; }
+.calc-points { flex-wrap: wrap; font-size: min(48px, calc((100cqw - 24px) / (var(--chars, 10) * 0.7))); }
+/* A scrollbar, if the lists ever need one, gets its own gutter instead of covering the numbers. */
+.calc-lists { scrollbar-gutter: stable; }
+.calc-list { font-size: 13px; gap: 3px 12px; }
+.calc-line-name small { font-size: 10px; }
 .calc-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 0; overflow: auto; align-content: start; }
 .calc-lists.single { grid-template-columns: 1fr; }
 .calc-list { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; font-size: 14px; align-content: start; }

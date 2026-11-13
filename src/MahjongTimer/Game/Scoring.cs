@@ -103,7 +103,7 @@ public sealed record Payment(bool IsTsumo, bool IsDealer, int Ron, int EachNonDe
         : IsDealer ? $"{Points(EachNonDealer)} all"
         : $"{Points(EachNonDealer)} / {Points(Dealer)}";
 
-    public string Label => !IsTsumo ? "Ron" : IsDealer ? "Tsumo" : "Tsumo · non-dealers / dealer";
+    public string Label => IsTsumo ? "Tsumo" : "Ron";
 
     private static string Points(int points) => points.ToString("N0", CultureInfo.InvariantCulture);
 }
