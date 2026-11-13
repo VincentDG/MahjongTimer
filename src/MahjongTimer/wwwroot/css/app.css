@@ -386,7 +386,9 @@ button { font: inherit; color: inherit; }
 .calc-field { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 2px; min-width: 0; }
 .calc-field.fill { flex: 1; }
 .calc-field.grows { justify-self: start; min-width: 72px; max-width: 100%; }
-.calc-field.winning { flex: none; width: 64px; }
+/* One tile code ("4m") needs little room; the label may run slightly wider than the box. */
+.calc-field.winning { flex: none; width: 46px; }
+.calc-field.winning .calc-label { white-space: nowrap; }
 .calc-field.kan { flex: 1; max-width: 25%; }
 .calc-field.plus { flex: none; width: 52px; justify-items: center; }
 .calc-box {
