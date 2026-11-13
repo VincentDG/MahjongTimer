@@ -163,7 +163,7 @@
             @if (_score is { } score)
             {
                 <div class="calc-headline">@score.Headline</div>
-                <div class="calc-points"><span>@score.Payment.Amount</span><small>@score.Payment.Label@(_conditions.Honba > 0 ? $" · incl. {_conditions.Honba} honba" : "")</small></div>
+                <div class="calc-points"><span>@score.Payment.Amount</span><small><span class="calc-win-type">@score.Payment.Label</span>@(_conditions.Honba > 0 ? $" · incl. {_conditions.Honba} honba" : "")</small></div>
                 <div class="calc-lists @(score.IsYakuman ? "single" : "")">
                     <div class="calc-list">
                         @foreach (var line in score.HanLines) { @LineName(line)<span>@(score.IsYakuman ? "" : line.Value)</span> }

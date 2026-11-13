@@ -519,6 +519,7 @@ button { font: inherit; color: inherit; }
 /* Points with Ron/Tsumo centred beside them. */
 .calc-points { display: flex; align-items: center; gap: 10px; }
 .calc-points small { margin-left: 0; }
+.calc-win-type { color: var(--red); font-weight: 600; }
 .calc-line-name { display: grid; line-height: 1.2; }
 .calc-line-name small { font-size: 11px; color: var(--muted); }
 .calc-honba { font-size: 14px; }
