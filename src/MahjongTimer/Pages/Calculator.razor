@@ -1,0 +1,323 @@
+@using MahjongTimer.Game
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@* Full-screen hand calculator, drawn rotated 90° so it reads in landscape while the app stays
+   portrait-locked. Fields are plain boxes, not inputs, so the phone keyboard never opens. *@
+<div class="calculator @(_onConditions ? "on-conditions" : "")" role="dialog" aria-label="Hand calculator">
+    @if (!_onConditions)
+    {
+        <section class="calc-tiles">
+            <div class="calc-topright">
+                <span class="calc-count @(_entry.TileCount == HandEntry.TilesInWinningHand ? "ok" : "")">@_entry.TileCount / @HandEntry.TilesInWinningHand tiles</span>
+                <button class="calc-close" @onclick="OnClose">Close</button>
+            </div>
+
+            <div class="calc-dora">
+                @foreach (var (label, field) in new[] { ("Dora", new FieldRef(Field.Dora)), ("Ura", new FieldRef(Field.UraDora)) })
+                {
+                    var text = Mpsz.Read(TextOf(field));
+                    <span class="calc-label">@label</span>
+                    <span class="calc-slots @Dim(field)">
+                        @foreach (var tile in text.Tiles.Take(HandEntry.MaxIndicators)) { <TileView Tile="tile" /> }
+                        @for (var i = text.Tiles.Count; i < HandEntry.MaxIndicators; i++) { <span class="slot"></span> }
+                    </span>
+                }
+            </div>
+
+            <div class="calc-hand" style="--count:@HandLineTileCount()">
+                @TileGroup(new FieldRef(Field.Closed), _entry.Closed)
+                @foreach (var group in OpenGroups()) { @TileGroup(new FieldRef(Field.Open), group) }
+                @for (var i = 0; i < _entry.ConcealedKans.Count; i++) { @TileGroup(new FieldRef(Field.Kan, i), _entry.ConcealedKans[i], isConcealedKan: true) }
+                <span class="calc-gap"></span>
+                @TileGroup(new FieldRef(Field.Winning), _entry.Winning, isWinning: true)
+            </div>
+        </section>
+
+        <section class="calc-fields">
+            <div class="calc-row halves">
+                @FieldBox("Dora", new FieldRef(Field.Dora), "grows")
+                @FieldBox("Ura", new FieldRef(Field.UraDora), "grows")
+            </div>
+            <div class="calc-row">
+                @FieldBox("Closed", new FieldRef(Field.Closed), "fill")
+                @for (var i = 0; i < _entry.ConcealedKans.Count; i++)
+                {
+                    var index = i;
+                    <div class="calc-field kan">
+                        <span class="calc-label">Kan</span>
+                        <div class="calc-box @Active(new FieldRef(Field.Kan, index))" @onclick="() => _active = new FieldRef(Field.Kan, index)">
+                            <span class="calc-text">@_entry.ConcealedKans[index]</span>
+                            <button class="calc-remove" aria-label="Remove concealed kan" @onclick="() => RemoveKan(index)" @onclick:stopPropagation="true">×</button>
+                        </div>
+                    </div>
+                }
+                <div class="calc-field plus">
+                    <span class="calc-label">Kan</span>
+                    <button class="calc-add" aria-label="Add concealed kan" disabled="@(_entry.ConcealedKans.Count >= 4)" @onclick="AddKan">+</button>
+                </div>
+                @FieldBox("Winning", new FieldRef(Field.Winning), "winning")
+            </div>
+            <div class="calc-row">
+                @FieldBox("Open", new FieldRef(Field.Open), "fill")
+            </div>
+        </section>
+
+        <section class="calc-keys">
+            <div class="calc-honours">
+                @for (var rank = 1; rank <= 7; rank++)
+                {
+                    var honour = $"{rank}z";
+                    <button class="calc-honour" aria-label="@honour" @onclick="() => Type(honour)">
+                        <TileView Tile="new Tile(rank, 'z')" /><span>@honour</span>
+                    </button>
+                }
+            </div>
+            <div class="calc-keypad">
+                @foreach (var key in new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" })
+                {
+                    <button class="calc-key" @onclick="() => Type(key)">@key</button>
+                }
+                <button class="calc-key" aria-label="Delete" @onclick="Backspace">⌫</button>
+                @foreach (var suit in new[] { "m", "p", "s", "z" })
+                {
+                    <button class="calc-key suit" @onclick="() => Type(suit)">@suit</button>
+                }
+                <button class="calc-key comma" aria-label="Comma" @onclick='() => Type(",")'>,</button>
+            </div>
+            @if (Hand is null && _entry.TileCount > 0)
+            {
+                <span class="calc-invalid">Invalid hand</span>
+            }
+            <button class="calc-submit" disabled="@(Hand is null)" @onclick="ShowConditions">Calculate value</button>
+        </section>
+    }
+    else
+    {
+        <section class="calc-head">
+            <button class="calc-back" @onclick="() => _onConditions = false">‹ Back</button>
+            <div class="calc-hand small">
+                @TileGroup(new FieldRef(Field.Closed), _entry.Closed, dim: false)
+                @foreach (var group in OpenGroups()) { @TileGroup(new FieldRef(Field.Open), group, dim: false) }
+                @for (var i = 0; i < _entry.ConcealedKans.Count; i++) { @TileGroup(new FieldRef(Field.Kan, i), _entry.ConcealedKans[i], isConcealedKan: true, dim: false) }
+                <span class="calc-gap"></span>
+                @TileGroup(new FieldRef(Field.Winning), _entry.Winning, isWinning: true, dim: false)
+            </div>
+            <button class="calc-close" @onclick="OnClose">Close</button>
+        </section>
+
+        <section class="calc-conditions">
+            @{ var c = _conditions; var closedHand = Hand!.CalledSets.Count == 0; var hasKan = HasKan(); }
+            <div class="calc-cond">
+                <span class="calc-label">Win</span>
+                <div class="calc-chips">
+                    @Chip("Ron", !c.IsTsumo, () => Set(c with { IsTsumo = false }))
+                    @Chip("Tsumo", c.IsTsumo, () => Set(c with { IsTsumo = true }))
+                </div>
+            </div>
+            <div class="calc-cond">
+                <span class="calc-label">Riichi</span>
+                <div class="calc-chips">
+                    @Chip("Riichi", c.IsRiichi, () => Set(c with { IsRiichi = !c.IsRiichi, IsDoubleRiichi = false }), !closedHand)
+                    @Chip("Ippatsu", c.IsIppatsu, () => Set(c with { IsIppatsu = !c.IsIppatsu }), !(c.IsRiichi || c.IsDoubleRiichi))
+                </div>
+            </div>
+            <div class="calc-cond">
+                <span class="calc-label">Seat wind</span>
+                <div class="calc-chips">
+                    @foreach (var wind in Enum.GetValues<Wind>()) { @Chip(wind.ToString(), c.SeatWind == wind, () => Set(c with { SeatWind = wind })) }
+                </div>
+            </div>
+            <div class="calc-cond">
+                <span class="calc-label">Round wind</span>
+                <div class="calc-chips">
+                    @foreach (var wind in new[] { Wind.East, Wind.South }) { @Chip(wind.ToString(), c.RoundWind == wind, () => Set(c with { RoundWind = wind })) }
+                </div>
+            </div>
+            <div class="calc-cond">
+                <span class="calc-label">Honba</span>
+                <div class="calc-chips">
+                    @Chip("−", false, () => Set(c with { Honba = c.Honba - 1 }), c.Honba == 0)
+                    <span class="calc-honba">@c.Honba</span>
+                    @Chip("+", false, () => Set(c with { Honba = c.Honba + 1 }))
+                </div>
+            </div>
+            <div class="calc-cond">
+                <span class="calc-label">Rare</span>
+                <div class="calc-chips">
+                    <button class="calc-chip more" @onclick="() => _showRare = !_showRare">@(_showRare ? "Less ▴" : "More ▾")</button>
+                    @if (_showRare)
+                    {
+                        @Chip("Double riichi", c.IsDoubleRiichi, () => Set(c with { IsDoubleRiichi = !c.IsDoubleRiichi, IsRiichi = false }), !closedHand)
+                        @Chip("Rinshan", c.IsRinshan, () => Set(c with { IsRinshan = !c.IsRinshan }), !hasKan || !c.IsTsumo)
+                        @Chip("Chankan", c.IsChankan, () => Set(c with { IsChankan = !c.IsChankan }), c.IsTsumo)
+                        @Chip("Haitei", c.IsHaitei, () => Set(c with { IsHaitei = !c.IsHaitei }), !c.IsTsumo)
+                        @Chip("Houtei", c.IsHoutei, () => Set(c with { IsHoutei = !c.IsHoutei }), c.IsTsumo)
+                        @Chip("Tenhou", c.IsTenhou, () => Set(c with { IsTenhou = !c.IsTenhou }), !c.IsTsumo || !closedHand || !c.IsDealer)
+                        @Chip("Chiihou", c.IsChiihou, () => Set(c with { IsChiihou = !c.IsChiihou }), !c.IsTsumo || !closedHand || c.IsDealer)
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="calc-result">
+            @if (_score is { } score)
+            {
+                <div class="calc-headline">@score.Headline</div>
+                <div class="calc-points">@score.Payment.Amount<small>@score.Payment.Label@(_conditions.Honba > 0 ? $" · incl. {_conditions.Honba} honba" : "")</small></div>
+                <div class="calc-lists @(score.IsYakuman ? "single" : "")">
+                    <div class="calc-list">
+                        @foreach (var line in score.HanLines) { <span>@line.Name</span><span>@(score.IsYakuman ? "" : line.Value)</span> }
+                        @if (!score.IsYakuman) { <span class="total">Han</span><span class="total">@score.Han</span> }
+                    </div>
+                    @if (!score.IsYakuman)
+                    {
+                        <div class="calc-list">
+                            @foreach (var line in score.FuLines) { <span>@line.Name</span><span>@line.Value</span> }
+                            <span class="total">Fu</span><span class="total">@(score.RawFu == score.Fu ? $"{score.Fu}" : $"{score.RawFu} → {score.Fu}")</span>
+                        </div>
+                    }
+                </div>
+            }
+            else if (_scoreError is { } error)
+            {
+                <p class="calc-pending">@error</p>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    private enum Field { Dora, UraDora, Closed, Winning, Open, Kan }
+
+    /// <summary>Which text field: the kind, and for a concealed kan, which one.</summary>
+    private readonly record struct FieldRef(Field Field, int KanIndex = 0);
+
+    private const int MaxConcealedKans = 4;
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private HandEntry _entry = new();
+    private FieldRef _active = new(Field.Closed);
+    private WinConditions _conditions = new();
+    private bool _onConditions;
+    private bool _showRare;
+    private IJSObjectReference? _scoring;
+    private HandScore? _score;
+    private string? _scoreError;
+
+    /// <summary>The checked hand, or null while the entry is invalid. Recomputed on every render.</summary>
+    private WinningHand? Hand => _entry.Read();
+
+    private string TextOf(FieldRef field) => field.Field switch
+    {
+        Field.Dora => _entry.Dora,
+        Field.UraDora => _entry.UraDora,
+        Field.Closed => _entry.Closed,
+        Field.Winning => _entry.Winning,
+        Field.Open => _entry.Open,
+        _ => _entry.ConcealedKans[field.KanIndex],
+    };
+
+    private void SetText(FieldRef field, string text) => _entry = field.Field switch
+    {
+        Field.Dora => _entry with { Dora = text },
+        Field.UraDora => _entry with { UraDora = text },
+        Field.Closed => _entry with { Closed = text },
+        Field.Winning => _entry with { Winning = text },
+        Field.Open => _entry with { Open = text },
+        _ => _entry with { ConcealedKans = _entry.ConcealedKans.Select((kan, i) => i == field.KanIndex ? text : kan).ToList() },
+    };
+
+    private void Type(string key) => SetText(_active, TextOf(_active) + key);
+
+    private void Backspace()
+    {
+        var text = TextOf(_active);
+        if (text.Length > 0) SetText(_active, text[..^1]);
+    }
+
+    private void AddKan()
+    {
+        if (_entry.ConcealedKans.Count >= MaxConcealedKans) return;
+        _entry = _entry with { ConcealedKans = [.. _entry.ConcealedKans, ""] };
+        _active = new FieldRef(Field.Kan, _entry.ConcealedKans.Count - 1);
+    }
+
+    private void RemoveKan(int index)
+    {
+        _entry = _entry with { ConcealedKans = _entry.ConcealedKans.Where((_, i) => i != index).ToList() };
+        _active = new FieldRef(Field.Closed);
+    }
+
+    private async Task ShowConditions()
+    {
+        if (Hand is null) return;
+        _onConditions = true;
+        Set(_conditions);
+        await Rescore();
+    }
+
+    /// <summary>Scores the current hand and conditions through riichi-score (wwwroot/js/scoring.js).</summary>
+    private async Task Rescore()
+    {
+        if (Hand is not { } hand) return;
+        _scoring ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/scoring.js");
+        var response = await _scoring.InvokeAsync<ScoreResponse>("score", ScoreRequest.From(hand, _conditions));
+        _score = response.IsValid ? HandScore.From(response, _conditions) : null;
+        _scoreError = response.IsValid ? null : response.Errors.FirstOrDefault() ?? "This hand can't win as entered.";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_scoring is null) return;
+        try { await _scoring.DisposeAsync(); } catch (JSDisconnectedException) { }
+    }
+
+    private void Set(WinConditions conditions) =>
+        _conditions = conditions.FitTo(isClosed: Hand?.CalledSets.Count == 0, hasKan: HasKan());
+
+    private bool HasKan() =>
+        Hand is { } hand && (hand.ConcealedKans.Count > 0 || hand.CalledSets.Any(set => set.Kind == CalledSetKind.Kan));
+
+    private IEnumerable<string> OpenGroups() =>
+        string.IsNullOrWhiteSpace(_entry.Open) ? [] : _entry.Open.Split(',');
+
+    /// <summary>Tiles drawn in the hand line, including pending digits, so tiles can shrink to fit.</summary>
+    private int HandLineTileCount()
+    {
+        var fields = new[] { _entry.Closed, _entry.Winning }.Concat(OpenGroups()).Concat(_entry.ConcealedKans);
+        return Math.Max(14, fields.Sum(text => { var read = Mpsz.Read(text); return read.Tiles.Count + read.PendingDigits.Count; }));
+    }
+
+    private string Active(FieldRef field) => _active == field ? "active" : "";
+
+    private string Dim(FieldRef field) => _active == field ? "" : "dim";
+
+    private RenderFragment TileGroup(FieldRef field, string text, bool isWinning = false, bool isConcealedKan = false, bool dim = true) => __builder =>
+    {
+        var read = Mpsz.Read(text);
+        if (read.Tiles.Count == 0 && read.PendingDigits.Count == 0) return;
+        var faceDownEnds = isConcealedKan && read.Tiles.Count == 4;
+        <span class="calc-group @(isWinning ? "winning" : "") @(dim ? Dim(field) : "")">
+            @for (var i = 0; i < read.Tiles.Count; i++)
+            {
+                <TileView Tile="read.Tiles[i]" FaceDown="@(faceDownEnds && (i == 0 || i == 3))" />
+            }
+            @foreach (var digit in read.PendingDigits) { <TileView Pending="digit" /> }
+        </span>
+    };
+
+    private RenderFragment FieldBox(string label, FieldRef field, string kind) => __builder =>
+    {
+        <div class="calc-field @kind">
+            <span class="calc-label">@label</span>
+            <div class="calc-box @Active(field)" @onclick="() => _active = field"><span class="calc-text">@TextOf(field)</span></div>
+        </div>
+    };
+
+    private RenderFragment Chip(string label, bool pressed, Action onClick, bool disabled = false) => __builder =>
+    {
+        <button class="calc-chip" aria-pressed="@(pressed ? "true" : "false")" disabled="@disabled" @onclick="async () => { onClick(); await Rescore(); }">@label</button>
+    };
+}

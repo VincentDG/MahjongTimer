@@ -1,0 +1,33 @@
+@using MahjongTimer.Game
+
+@* One tile picture. Pass Tile for a face, Pending for a half-typed digit, or FaceDown. *@
+@if (FaceDown)
+{
+    <span class="tile face-down"><img src="tiles/Back.svg" alt="face-down tile" /></span>
+}
+else if (Tile is { } tile)
+{
+    <span class="tile"><img src="tiles/@(FileName(tile)).svg" alt="@tile" /></span>
+}
+else if (Pending is { } digit)
+{
+    <span class="tile pending">@digit</span>
+}
+
+@code {
+    private static readonly string[] HonourFiles = ["", "Ton", "Nan", "Shaa", "Pei", "Haku", "Hatsu", "Chun"];
+
+    [Parameter] public Tile? Tile { get; set; }
+    [Parameter] public int? Pending { get; set; }
+    [Parameter] public bool FaceDown { get; set; }
+
+    private static string FileName(Tile tile) => tile.Suit switch
+    {
+        'z' => HonourFiles[tile.Rank],
+        'm' => "Man" + RankPart(tile),
+        'p' => "Pin" + RankPart(tile),
+        _ => "Sou" + RankPart(tile),
+    };
+
+    private static string RankPart(Tile tile) => tile.IsRed ? "5-Dora" : tile.Rank.ToString();
+}

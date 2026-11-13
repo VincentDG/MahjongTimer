@@ -20,12 +20,19 @@
         <button class="ctrl @(_confirmingNewHand ? "confirm" : "")" @onclick="NewHand">
             @(_confirmingNewHand ? "Tap to confirm" : "New hand")
         </button>
+        @* Placeholder entry to the calculator until the Hand over flow (Q23) is designed. *@
+        <button class="ctrl" @onclick="OpenCalculator">Hand value</button>
         <button class="ctrl quiet" @onclick="OpenSettings">@_clock.Setting</button>
     </div>
 
     <SeatPanel Clock="_clock" SeatIndex="1" Position="right" OnTap="TapSeat" />
     <SeatPanel Clock="_clock" SeatIndex="0" Position="bottom" OnTap="TapSeat" />
 </div>
+
+@if (_calculatorOpen)
+{
+    <Calculator OnClose="CloseCalculator" />
+}
 
 @if (_settingsOpen)
 {
@@ -64,6 +71,7 @@
     private DotNetObjectReference<Home>? _self;
     private bool _soundOn = true;
     private bool _settingsOpen;
+    private bool _calculatorOpen;
     private bool _confirmingNewHand;
     private DateTime _confirmStartedUtc;
 
@@ -147,6 +155,15 @@
     }
 
     private void CloseSettings() => _settingsOpen = false;
+
+    // The clock stays paused after the calculator closes; players resume it themselves.
+    private void OpenCalculator()
+    {
+        if (_clock.IsHandInProgress && !_clock.IsPaused) _clock.TogglePause();
+        _calculatorOpen = true;
+    }
+
+    private void CloseCalculator() => _calculatorOpen = false;
 
     private async Task ChooseSetting(TimeSetting setting)
     {
