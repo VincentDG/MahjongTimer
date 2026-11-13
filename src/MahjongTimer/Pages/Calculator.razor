@@ -119,7 +119,7 @@
             <button class="calc-close" @onclick="OnClose">Close</button>
         </section>
 
-        <section class="calc-conditions">
+        <section class="calc-conditions" @ref="_conditionsColumn">
             @{ var c = _conditions; var closedHand = Hand!.CalledSets.Count == 0; var hasKan = HasKan(); }
             <div class="calc-cond">
                 <span class="calc-label">Win</span>
@@ -127,15 +127,15 @@
                     @Chip("Ron", !c.IsTsumo, () => Set(c with { IsTsumo = false }), kind: "ron")
                     @Chip("Tsumo", c.IsTsumo, () => Set(c with { IsTsumo = true }), kind: "tsumo")
                 </div>
-            </div>
-            <div class="calc-cond">
+                <div class="calc-pair">
                 <span class="calc-label">Riichi</span>
                 <div class="calc-chips">
                     @Chip("Riichi", c.IsRiichi, () => Set(c with { IsRiichi = !c.IsRiichi, IsDoubleRiichi = false }), !closedHand, kind: "riichi")
                     @Chip("Ippatsu", c.IsIppatsu, () => Set(c with { IsIppatsu = !c.IsIppatsu }), !(c.IsRiichi || c.IsDoubleRiichi))
                 </div>
+                </div>
             </div>
-            <div class="calc-cond">
+            <div class="calc-cond one-line">
                 <span class="calc-label">Seat wind</span>
                 <div class="calc-chips">
                     @foreach (var wind in Enum.GetValues<Wind>()) { @Chip(wind.ToString(), c.SeatWind == wind, () => Set(c with { SeatWind = wind })) }
@@ -146,13 +146,13 @@
                 <div class="calc-chips">
                     @foreach (var wind in new[] { Wind.East, Wind.South, Wind.West }) { @Chip(wind.ToString(), c.RoundWind == wind, () => Set(c with { RoundWind = wind })) }
                 </div>
-            </div>
-            <div class="calc-cond">
+                <div class="calc-pair">
                 <span class="calc-label">Honba</span>
                 <div class="calc-chips">
                     @Chip("−", false, () => Set(c with { Honba = c.Honba - 1 }), c.Honba == 0)
                     <span class="calc-honba">@c.Honba</span>
                     @Chip("+", false, () => Set(c with { Honba = c.Honba + 1 }))
+                </div>
                 </div>
             </div>
             <div class="calc-cond">
@@ -232,6 +232,8 @@
     private HandScore? _score;
     private HandScore? _fittedScore; // The result the lists were last sized for.
     private ElementReference _lists;
+    private ElementReference _conditionsColumn;
+    private bool _conditionsFitted; // Sized once each time the conditions screen opens.
     private IJSObjectReference? _fit;
     private string? _scoreError;
 
@@ -318,6 +320,7 @@
     {
         if (Hand is null) return;
         _onConditions = true;
+        _conditionsFitted = false;
         Set(_conditions);
         await Rescore();
     }
@@ -338,10 +341,22 @@
     /// </summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_onConditions || _score is null || ReferenceEquals(_score, _fittedScore)) return;
-        _fittedScore = _score;
+        if (!_onConditions) return;
+        var fitConditions = !_conditionsFitted;
+        var fitLists = _score is not null && !ReferenceEquals(_score, _fittedScore);
+        if (!fitConditions && !fitLists) return;
+
         _fit ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/fit.js");
-        await _fit.InvokeVoidAsync("fitLists", _lists);
+        if (fitConditions)
+        {
+            _conditionsFitted = true;
+            await _fit.InvokeVoidAsync("fitConditions", _conditionsColumn);
+        }
+        if (fitLists)
+        {
+            _fittedScore = _score;
+            await _fit.InvokeVoidAsync("fitLists", _lists);
+        }
     }
 
     public async ValueTask DisposeAsync()
